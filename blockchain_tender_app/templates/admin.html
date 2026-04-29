@@ -1,0 +1,964 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'Outfit', sans-serif;
+  --font-mono:    'Fira Code', monospace;
+  --bg-base:       #060B18;
+  --bg-surface:    #0C1426;
+  --bg-card:       #111E35;
+  --bg-input:      rgba(255,255,255,0.05);
+  --border:        rgba(255,255,255,0.08);
+  --border-hi:     rgba(255,255,255,0.16);
+  --text-1:        #F0F4FF;
+  --text-2:        #8FA3C3;
+  --text-3:        #4B6080;
+  --cyan:    #00E5FF; --amber:   #FFB800; --violet:  #9B59F7;
+  --green:   #00D68F; --red:     #FF4757; --blue:    #3D8EFF;
+  --pink:    #FF6B9D; --orange:  #FF7A30;
+  --glow-cyan:   0 0 24px rgba(0,229,255,0.25);
+  --glow-amber:  0 0 24px rgba(255,184,0,0.25);
+  --glow-violet: 0 0 24px rgba(155,89,247,0.25);
+  --glow-green:  0 0 24px rgba(0,214,143,0.25);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+  --bg-base:#EEF2FA; --bg-surface:#F7F9FF; --bg-card:#FFFFFF;
+  --bg-input:rgba(0,0,0,0.04); --border:rgba(0,0,0,0.08); --border-hi:rgba(0,0,0,0.18);
+  --text-1:#0D1B36; --text-2:#4A6080; --text-3:#9AADC8;
+  --cyan:#0099CC; --amber:#E09000; --violet:#7B3FE4; --green:#00A86B;
+  --red:#E8353F; --blue:#2563EB; --pink:#D94F7C; --orange:#D95E20;
+  --glow-cyan:0 2px 16px rgba(0,153,204,0.18); --glow-amber:0 2px 16px rgba(224,144,0,0.18);
+  --glow-violet:0 2px 16px rgba(123,63,228,0.18); --glow-green:0 2px 16px rgba(0,168,107,0.18);
+  --shadow-card:0 2px 16px rgba(0,0,0,0.09);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-display);background:var(--bg-base);color:var(--text-1);min-height:100vh;transition:background 0.45s,color 0.45s;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 50% at 10% 20%,rgba(0,229,255,0.05) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 90% 80%,rgba(155,89,247,0.06) 0%,transparent 60%);transition:opacity 0.5s}
+[data-theme="light"] body::before{background:radial-gradient(ellipse 80% 50% at 10% 20%,rgba(0,153,204,0.05) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 90% 80%,rgba(123,63,228,0.04) 0%,transparent 60%)}
+
+/* TOGGLE */
+.dn-toggle{display:flex;align-items:center;gap:9px;user-select:none}
+.dn-label{font-family:var(--font-mono);font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-2);transition:color 0.35s;min-width:38px}
+.dn-track{position:relative;width:70px;height:36px;border-radius:36px;cursor:pointer;transition:all 0.45s cubic-bezier(0.34,1.56,0.64,1);outline:none;border:none;padding:0;background:linear-gradient(135deg,#1a2744 20%,#0c1630 100%);box-shadow:inset 0 2px 6px rgba(0,0,0,0.4),0 0 0 2px rgba(0,229,255,0.2);overflow:hidden}
+[data-theme="light"] .dn-track{background:linear-gradient(135deg,#5BB8F5 0%,#87CEEB 40%,#FDB97D 100%);box-shadow:inset 0 2px 6px rgba(0,0,0,0.1),0 0 0 2px rgba(255,180,30,0.4)}
+.dn-track:hover{transform:scale(1.06)}
+.dn-stars{position:absolute;inset:0;pointer-events:none;transition:opacity .35s}
+.dn-stars span{position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.7);animation:twinkle 2s ease-in-out infinite}
+.dn-stars span:nth-child(1){top:8px;left:10px} .dn-stars span:nth-child(2){top:18px;left:20px;width:2px;height:2px;animation-delay:.7s} .dn-stars span:nth-child(3){top:5px;left:32px;width:2px;height:2px;animation-delay:1.3s}
+[data-theme="light"] .dn-stars{opacity:0}
+@keyframes twinkle{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:.2;transform:scale(.6)}}
+.dn-clouds{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s .1s;display:flex;align-items:center;padding-right:8px;justify-content:flex-end}
+[data-theme="light"] .dn-clouds{opacity:1}
+.dn-clouds::before{content:'☁';font-size:13px;color:rgba(255,255,255,.85)}
+.dn-thumb{position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;transition:left .45s cubic-bezier(.34,1.56,.64,1),background .35s,box-shadow .3s;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;background:linear-gradient(135deg,#c8d8ff,#94aee8);box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25)}
+[data-theme="light"] .dn-thumb{left:38px;background:linear-gradient(135deg,#FFE44D,#FFB800);box-shadow:0 2px 12px rgba(255,184,0,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.dn-icon{pointer-events:none;display:block;transition:transform .45s cubic-bezier(.34,1.56,.64,1);filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+[data-theme="light"] .dn-icon{transform:rotate(360deg)}
+
+/* HEADER */
+.adm-header{position:fixed;top:0;left:0;right:0;height:64px;z-index:200;background:rgba(6,11,24,0.88);backdrop-filter:blur(24px) saturate(2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;transition:background 0.45s}
+[data-theme="light"] .adm-header{background:rgba(247,249,255,0.9)}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:900;letter-spacing:0.06em}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:var(--glow-cyan)}
+.logo-wordmark{color:var(--text-1)} .logo-wordmark em{color:var(--cyan);font-style:normal}
+.logo-sep{color:var(--text-3);margin:0 6px;font-weight:300}
+.logo-tag{color:var(--amber);font-weight:700;font-size:0.82rem;letter-spacing:0.08em}
+.header-right{display:flex;align-items:center;gap:12px}
+.wallet-chip{display:flex;align-items:center;gap:7px;background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:6px 14px 6px 10px;cursor:pointer;transition:all 0.2s;font-family:var(--font-mono);font-size:0.72rem;color:var(--text-2)}
+.wallet-chip:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:var(--glow-cyan)}
+.wdot{width:8px;height:8px;border-radius:50%;background:var(--text-3);transition:background 0.3s}
+.wdot.on{background:var(--green);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.45}}
+.btn-logout{background:linear-gradient(135deg,rgba(255,71,87,.15),rgba(255,71,87,.07));border:1px solid rgba(255,71,87,.3);color:var(--red);font-family:var(--font-display);font-weight:700;font-size:0.76rem;padding:7px 16px;border-radius:24px;text-decoration:none;transition:all 0.2s}
+.btn-logout:hover{background:rgba(255,71,87,.22);color:var(--red);box-shadow:0 0 18px rgba(255,71,87,.22)}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:242px 1fr;min-height:calc(100vh - 64px);margin-top:64px;position:relative;z-index:1}
+.sidebar{background:var(--bg-surface);border-right:1px solid var(--border);padding:1.5rem 0 2rem;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;transition:background 0.45s}
+.sb-env{margin:0 1.25rem 1.25rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.env-chip{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(155,89,247,.1));border:1px solid rgba(0,229,255,.2);border-radius:20px;padding:5px 11px;font-family:var(--font-mono);font-size:.62rem;color:var(--cyan)}
+.env-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+.nav-group{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);padding:1rem 1.25rem .35rem}
+.nav-item{display:flex;align-items:center;gap:10px;padding:.68rem 1.25rem;font-size:.83rem;font-weight:500;color:var(--text-2);cursor:pointer;border-left:3px solid transparent;border-radius:0 10px 10px 0;margin:1px 8px 1px 0;transition:all .18s;user-select:none}
+.nav-item:hover{color:var(--text-1);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--text-1);font-weight:700;border-left-color:var(--nav-accent,var(--cyan));background:linear-gradient(90deg,rgba(var(--nav-rgb,.4),0.09),transparent)}
+.nav-ic{width:33px;height:33px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0}
+.nav-item.active .nav-ic{background:linear-gradient(135deg,var(--nav-accent,var(--cyan)),var(--nav-accent2,var(--violet)));color:#000!important}
+.nav-item:not(.active):hover .nav-ic{background:rgba(255,255,255,.08)}
+.nav-item-ov{--nav-accent:var(--cyan);--nav-accent2:var(--violet);--nav-rgb:0,229,255}
+.nav-item-ten{--nav-accent:var(--violet);--nav-accent2:var(--pink);--nav-rgb:155,89,247}
+.nav-item-bid{--nav-accent:var(--amber);--nav-accent2:var(--orange);--nav-rgb:255,184,0}
+.nav-item-usr{--nav-accent:var(--green);--nav-accent2:var(--cyan);--nav-rgb:0,214,143}
+.nav-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;background:var(--amber);color:#000;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;font-family:var(--font-mono)}
+
+/* MAIN */
+.main-area{padding:2rem 2.25rem;overflow-y:auto}
+.adm-section{display:none}
+.adm-section.active{display:block;animation:sIn .35s cubic-bezier(.22,1,.36,1) both}
+@keyframes sIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.page-hd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.75rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.page-title{font-size:1.6rem;font-weight:900;letter-spacing:-.02em;line-height:1.1}
+.page-title .hl{background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.page-sub{font-size:.8rem;color:var(--text-2);margin-top:4px;font-family:var(--font-mono)}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.4rem;box-shadow:var(--shadow-card);transition:all .25s;position:relative;overflow:hidden;cursor:default}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0;background:var(--sc-g)}
+.stat-card::after{content:'';position:absolute;top:-40px;right:-20px;width:100px;height:100px;border-radius:50%;background:var(--sc-glow);pointer-events:none;transition:transform .3s}
+.stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-card),var(--sc-sh);border-color:var(--border-hi)}
+.stat-card:hover::after{transform:scale(1.4)}
+.sc1{--sc-g:linear-gradient(90deg,var(--cyan),#00A8CC);--sc-glow:rgba(0,229,255,.07);--sc-sh:var(--glow-cyan);--scc:var(--cyan)}
+.sc2{--sc-g:linear-gradient(90deg,var(--green),#00B87A);--sc-glow:rgba(0,214,143,.07);--sc-sh:var(--glow-green);--scc:var(--green)}
+.sc3{--sc-g:linear-gradient(90deg,var(--violet),#7A3DD4);--sc-glow:rgba(155,89,247,.07);--sc-sh:var(--glow-violet);--scc:var(--violet)}
+.sc4{--sc-g:linear-gradient(90deg,var(--amber),#E09000);--sc-glow:rgba(255,184,0,.07);--sc-sh:var(--glow-amber);--scc:var(--amber)}
+.s-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:.85rem;color:var(--scc)}
+.sc1 .s-icon{background:rgba(0,229,255,.12)} .sc2 .s-icon{background:rgba(0,214,143,.12)} .sc3 .s-icon{background:rgba(155,89,247,.12)} .sc4 .s-icon{background:rgba(255,184,0,.12)}
+.s-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px}
+.s-value{font-size:2rem;font-weight:900;color:var(--scc);line-height:1;font-family:var(--font-mono);letter-spacing:-.02em}
+.s-sub{font-size:.7rem;color:var(--text-2);margin-top:5px}
+
+/* PANELS */
+.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-card);overflow:hidden;transition:background .35s,border-color .35s}
+.p-hd{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.4rem;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,229,255,.03),transparent)}
+[data-theme="light"] .p-hd{background:linear-gradient(90deg,rgba(0,153,204,.04),transparent)}
+.p-title{font-family:var(--font-mono);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:8px;font-weight:600}
+.p-title::before{content:'';width:4px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--cyan),var(--violet))}
+.form-row{display:grid;gap:.75rem;padding:1.4rem;align-items:end}
+.fl label{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);display:block;margin-bottom:6px}
+.adm-input{width:100%;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;color:var(--text-1);font-family:var(--font-mono);font-size:.82rem;padding:9px 13px;outline:none;transition:all .2s}
+.adm-input:focus{border-color:var(--cyan);background:rgba(0,229,255,.04);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+.adm-input::placeholder{color:var(--text-3)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-display);font-weight:700;font-size:.8rem;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--cyan),#0099BB);color:#000;box-shadow:0 4px 14px rgba(0,229,255,.2)}
+.btn-primary:hover{box-shadow:0 6px 22px rgba(0,229,255,.38);transform:translateY(-2px)}
+.btn-ghost{background:var(--bg-input);color:var(--text-2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text-1);border-color:var(--border-hi);background:rgba(255,255,255,.08)}
+.btn-ok{background:linear-gradient(135deg,var(--green),#009060);color:#fff}
+.btn-ok:hover{box-shadow:0 4px 16px rgba(0,214,143,.35);transform:translateY(-2px)}
+.btn-no{background:linear-gradient(135deg,rgba(255,71,87,.15),rgba(255,71,87,.07));color:var(--red);border:1px solid rgba(255,71,87,.3)}
+.btn-no:hover{background:rgba(255,71,87,.22);box-shadow:0 4px 14px rgba(255,71,87,.22)}
+.btn-amber{background:linear-gradient(135deg,var(--amber),var(--orange));color:#000}
+.btn-amber:hover{box-shadow:0 4px 16px rgba(255,184,0,.35);transform:translateY(-2px)}
+.btn-sm{padding:6px 12px;font-size:.73rem;border-radius:8px}
+
+/* TABLE */
+.adm-table{width:100%;border-collapse:collapse}
+.adm-table thead tr{background:rgba(0,229,255,.04);border-bottom:1.5px solid var(--border)}
+[data-theme="light"] .adm-table thead tr{background:rgba(0,153,204,.05)}
+.adm-table th{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);padding:11px 16px;text-align:left;font-weight:500}
+.adm-table td{padding:11px 16px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:.77rem;vertical-align:middle;transition:background .15s}
+.adm-table tbody tr:last-child td{border-bottom:none}
+.adm-table tbody tr:hover td{background:rgba(255,255,255,.025)}
+[data-theme="light"] .adm-table tbody tr:hover td{background:rgba(0,0,0,.02)}
+.adm-table tbody tr:hover td:first-child{border-left:3px solid var(--cyan)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-family:var(--font-mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%}
+.b-active{background:rgba(0,214,143,.12);color:var(--green);border:1px solid rgba(0,214,143,.3)} .b-active::before{background:var(--green)}
+.b-voting{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.3)} .b-voting::before{background:var(--cyan);animation:pulse-dot 1.2s infinite}
+.b-ended{background:rgba(255,71,87,.1);color:var(--red);border:1px solid rgba(255,71,87,.25)} .b-ended::before{background:var(--red)}
+.b-finalized{background:rgba(75,96,128,.12);color:var(--text-2);border:1px solid rgba(75,96,128,.2)} .b-finalized::before{background:var(--text-2)}
+.b-pending{background:rgba(255,184,0,.12);color:var(--amber);border:1px solid rgba(255,184,0,.3)} .b-pending::before{background:var(--amber);animation:pulse-dot 1.5s infinite}
+.b-approved{background:rgba(0,214,143,.12);color:var(--green);border:1px solid rgba(0,214,143,.3)} .b-approved::before{background:var(--green)}
+.b-rejected{background:rgba(255,71,87,.1);color:var(--red);border:1px solid rgba(255,71,87,.25)} .b-rejected::before{background:var(--red)}
+.b-leading{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.3)} .b-leading::before{background:var(--cyan)}
+.b-outbid{background:rgba(75,96,128,.12);color:var(--text-3);border:1px solid rgba(75,96,128,.2)} .b-outbid::before{background:var(--text-3)}
+.b-winner{background:rgba(255,215,0,.12);color:#FFD700;border:1px solid rgba(255,215,0,.3)} .b-winner::before{background:#FFD700}
+
+/* BID BLOCKS */
+.bid-block{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;margin-bottom:1rem;overflow:hidden;box-shadow:var(--shadow-card);transition:border-color .2s}
+.bid-block:hover{border-color:var(--border-hi)}
+.bb-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,229,255,.03),transparent)}
+[data-theme="light"] .bb-head{background:linear-gradient(90deg,rgba(0,153,204,.04),transparent)}
+.bb-no{font-family:var(--font-mono);font-size:.62rem;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.bb-name{font-size:1rem;font-weight:800} .bb-desc{font-size:.75rem;color:var(--text-2);margin-top:2px}
+.bb-right{text-align:right;flex-shrink:0} .bb-cnt{font-family:var(--font-mono);font-size:.64rem;color:var(--text-3);margin-bottom:5px}
+.bid-row{display:grid;grid-template-columns:38px 1fr auto auto;gap:10px;align-items:center;padding:.72rem 1.4rem;border-bottom:1px solid var(--border);transition:background .15s}
+.bid-row:last-child{border-bottom:none}
+.bid-row:hover{background:rgba(255,255,255,.02)}
+[data-theme="light"] .bid-row:hover{background:rgba(0,0,0,.02)}
+.rank{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.7rem;font-weight:700}
+.r1{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;box-shadow:0 2px 10px rgba(255,184,0,.45)}
+.r2{background:linear-gradient(135deg,#C0C0C0,#909090);color:#000}
+.r3{background:linear-gradient(135deg,#CD7F32,#8B4513);color:#fff}
+.rn{background:var(--bg-input);color:var(--text-3);border:1px solid var(--border)}
+.b-addr{font-family:var(--font-mono);font-size:.75rem;font-weight:600;color:var(--text-1)}
+.b-meta{font-family:var(--font-mono);font-size:.64rem;color:var(--text-3);margin-top:2px}
+.b-eth{font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:var(--green)}
+
+/* USER CARDS */
+.user-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;transition:all .22s;box-shadow:var(--shadow-card)}
+.user-card:hover{border-color:var(--border-hi);transform:translateX(4px)}
+.u-av{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0;color:#000}
+.u-name{font-size:.9rem;font-weight:700;margin-bottom:2px} .u-addr{font-family:var(--font-mono);font-size:.68rem;color:var(--cyan);margin-bottom:2px}
+.u-meta{font-family:var(--font-mono);font-size:.68rem;color:var(--text-2)} .u-info{flex:1;min-width:0}
+.u-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+/* ALERTS */
+.adm-alert{padding:.75rem 1rem;border-radius:10px;font-family:var(--font-mono);font-size:.78rem;display:none;align-items:center;gap:8px;margin-top:.75rem}
+.adm-alert.show{display:flex}
+.al-i{background:rgba(61,142,255,.1);border:1px solid rgba(61,142,255,.3);color:var(--blue)}
+.al-s{background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);color:var(--green)}
+.al-e{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);color:var(--red)}
+
+/* SIDE PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:300;display:none}
+.overlay.open{display:block}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:520px;background:var(--bg-surface);border-left:1px solid var(--border);z-index:301;overflow-y:auto;padding:1.75rem;transform:translateX(100%);transition:transform .4s cubic-bezier(.22,1,.36,1)}
+.side-panel.open{transform:translateX(0)}
+.sp-close{display:flex;align-items:center;gap:6px;background:var(--bg-input);border:1px solid var(--border);color:var(--text-2);font-family:var(--font-display);font-size:.76rem;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .2s;margin-bottom:1.75rem}
+.sp-close:hover{color:var(--text-1);border-color:var(--border-hi)}
+.dp-no{font-family:var(--font-mono);font-size:.62rem;color:var(--cyan);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.dp-title{font-size:1.3rem;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
+.dp-desc{font-size:.8rem;color:var(--text-2);margin-bottom:1.5rem}
+.dp-meta{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem}
+.dp-mc{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem}
+.dp-mk{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px}
+.dp-mv{font-family:var(--font-mono);font-size:.82rem;font-weight:700}
+.dp-sec{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);padding-bottom:.6rem;border-bottom:1px solid var(--border);margin-bottom:.75rem;display:flex;align-items:center;gap:8px}
+.chart-box{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-top:1.25rem}
+.chart-lbl{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+.chart-lbl::before{content:'';width:4px;height:12px;border-radius:2px;background:linear-gradient(180deg,var(--violet),var(--cyan))}
+
+/* UTILITIES */
+.empty{text-align:center;padding:3rem 1rem;color:var(--text-3)} .empty-i{font-size:2.5rem;margin-bottom:.75rem;opacity:.3} .empty-t{font-size:.84rem}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px} ::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
+code{font-family:var(--font-mono);font-size:.85em;color:var(--cyan);background:rgba(0,229,255,.06);padding:1px 5px;border-radius:4px}
+[data-theme="light"] code{background:rgba(0,153,204,.08)}
+.tc{color:var(--cyan)} .tg{color:var(--green)} .ta{color:var(--amber)} .tv{color:var(--violet)} .tr{color:var(--red)} .t2{color:var(--text-2)} .mono{font-family:var(--font-mono)} .fw7{font-weight:700} .fw9{font-weight:900}
+.cd-open{color:var(--green);font-weight:700;font-family:var(--font-mono)} .cd-closed{color:var(--red);font-weight:700;font-family:var(--font-mono)}
+.row-section-hd{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+
+/* VOTE BARS */
+.vote-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:6px;padding-left:48px}
+.vote-bar-track{flex:1;height:5px;background:var(--bg-input);border-radius:3px;overflow:hidden}
+.vote-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.vote-bar-pct{font-family:var(--font-mono);font-size:.62rem;color:var(--text-3);min-width:34px;text-align:right}
+</style>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="adm-header">
+  <div class="logo">
+    <div class="logo-icon">⛓</div>
+    <div><div class="logo-wordmark">TENDER<em>CORE</em></div></div>
+    <span class="logo-sep">/</span>
+    <span class="logo-tag">ADMIN</span>
+  </div>
+  <div class="header-right">
+    <div class="dn-toggle">
+      <span class="dn-label" id="dn-lbl">NIGHT</span>
+      <button class="dn-track" onclick="toggleTheme()" aria-label="Toggle day/night theme">
+        <div class="dn-stars"><span></span><span></span><span></span></div>
+        <div class="dn-clouds"></div>
+        <div class="dn-thumb"><span class="dn-icon" id="dn-icon">🌙</span></div>
+      </button>
+    </div>
+    <button class="wallet-chip" onclick="initAdmin()">
+      <span class="wdot" id="wdot"></span>
+      <span id="wallet-lbl">Connect Wallet</span>
+    </button>
+    <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Logout</a>
+  </div>
+</header>
+
+<!-- ══════════════ SHELL ══════════════ -->
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sb-env"><div class="env-chip"><span class="env-dot"></span>Sepolia Testnet</div></div>
+    <div class="nav-group">Overview</div>
+    <div class="nav-item nav-item-ov active" onclick="showSection('overview')">
+      <div class="nav-ic tc"><i class="fas fa-chart-line"></i></div> Command Center
+    </div>
+    <div class="nav-group">Tender Operations</div>
+    <div class="nav-item nav-item-ten" onclick="showSection('tenders')">
+      <div class="nav-ic tv"><i class="fas fa-file-contract"></i></div> Tender Management
+    </div>
+    <div class="nav-item nav-item-bid" onclick="showSection('bids')">
+      <div class="nav-ic ta"><i class="fas fa-gavel"></i></div> Bidder Activity
+      <span class="nav-badge" id="badge-bids">0</span>
+    </div>
+    <div class="nav-group">Governance</div>
+    <div class="nav-item" style="--nav-accent:var(--cyan);--nav-accent2:var(--green);--nav-rgb:0,229,255" onclick="showSection('voting')">
+      <div class="nav-ic" style="background:rgba(0,229,255,.08);color:var(--cyan);"><i class="fas fa-vote-yea"></i></div> Vote Results
+      <span class="nav-badge" style="background:var(--cyan);" id="badge-voting">0</span>
+    </div>
+    <div class="nav-group">Access Control</div>
+    <div class="nav-item nav-item-usr" onclick="showSection('users')">
+      <div class="nav-ic tg"><i class="fas fa-users-gear"></i></div> User Management
+      <span class="nav-badge" id="badge-pending">0</span>
+    </div>
+  </aside>
+
+  <main class="main-area">
+
+    <!-- ══ OVERVIEW ══ -->
+    <section id="sec-overview" class="adm-section active">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Command <span class="hl">Center</span></div>
+          <div class="page-sub">Real-time blockchain tender intelligence</div>
+        </div>
+        <button class="btn btn-ghost" onclick="initAdmin()"><i class="fas fa-rotate"></i> Sync Chain</button>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card sc1"><div class="s-icon"><i class="fas fa-file-contract"></i></div><div class="s-label">Total Tenders</div><div class="s-value" id="stat-tenders">—</div><div class="s-sub">Deployed on-chain</div></div>
+        <div class="stat-card sc2"><div class="s-icon"><i class="fas fa-bolt"></i></div><div class="s-label">Bidding Open</div><div class="s-value" id="stat-active">—</div><div class="s-sub">Accepting bids now</div></div>
+        <div class="stat-card sc3"><div class="s-icon"><i class="fas fa-vote-yea"></i></div><div class="s-label">Voting Open</div><div class="s-value" id="stat-voting">—</div><div class="s-sub">Community voting live</div></div>
+        <div class="stat-card sc4"><div class="s-icon"><i class="fas fa-clock"></i></div><div class="s-label">Pending Approvals</div><div class="s-value" id="stat-pending">—</div><div class="s-sub">Awaiting your review</div></div>
+      </div>
+      <div class="panel">
+        <div class="p-hd">
+          <div class="p-title">Live Activity Feed</div>
+          <span class="mono t2" style="font-size:.65rem;" id="feed-ts">—</span>
+        </div>
+        <table class="adm-table">
+          <thead><tr><th>Tender</th><th>Bidder</th><th>Bid Amount</th><th>Phase</th><th>Countdown</th></tr></thead>
+          <tbody id="feed-body">
+            <tr><td colspan="5"><div class="empty"><div class="empty-i">⛓</div><div class="empty-t">Connect wallet to stream live activity</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ TENDER MANAGEMENT ══ -->
+    <section id="sec-tenders" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Tender <span class="hl">Management</span></div>
+          <div class="page-sub">Deploy and monitor on-chain procurement contracts</div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:1.25rem;">
+        <div class="p-hd"><div class="p-title"><i class="fas fa-rocket" style="margin-left:4px"></i> Deploy New Tender</div></div>
+        <div class="form-row" style="grid-template-columns:1fr 2fr 1fr 1fr auto;">
+          <div class="fl"><label>Title / ID</label><input id="new-title" class="adm-input" placeholder="e.g. T-201 Laptops"></div>
+          <div class="fl"><label>Project Description</label><input id="new-desc" class="adm-input" placeholder="Brief procurement scope"></div>
+          <div class="fl"><label>Bidding (mins)</label><input type="number" id="new-dur" class="adm-input" placeholder="e.g. 60"></div>
+          <div class="fl"><label>Voting Window (mins)</label><input type="number" id="new-vdur" class="adm-input" placeholder="e.g. 30"></div>
+          <div class="fl"><label style="opacity:0">x</label><button class="btn btn-primary" onclick="createTenderAdmin()" style="width:100%;"><i class="fas fa-rocket"></i> Deploy</button></div>
+        </div>
+        <div style="padding:0 1.4rem 1.2rem;"><div class="adm-alert al-i" id="create-alert"></div></div>
+      </div>
+      <div class="panel" id="tender-table-panel">
+        <div class="empty"><div class="empty-i">📋</div><div class="empty-t">Connect wallet to load tenders</div></div>
+      </div>
+    </section>
+
+    <!-- ══ BIDDER ACTIVITY ══ -->
+    <section id="sec-bids" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Bidder <span class="hl">Activity</span></div>
+          <div class="page-sub">Leaderboards and analytics per tender</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="bid-filter" class="adm-input" style="width:220px;" onchange="filterBids()"><option value="all">All Tenders</option></select>
+          <button class="btn btn-ghost" onclick="loadBidActivity()"><i class="fas fa-rotate"></i></button>
+        </div>
+      </div>
+      <div id="bid-wrap"><div class="empty"><div class="empty-i">🔗</div><div class="empty-t">Connect wallet to load bidder activity</div></div></div>
+      <div class="chart-box" id="ov-chart-box" style="display:none;margin-top:1.25rem;">
+        <div class="chart-lbl">Bid &amp; Vote Distribution</div>
+        <canvas id="ov-chart" height="100"></canvas>
+      </div>
+    </section>
+
+    <!-- ══ VOTE RESULTS ══ -->
+    <section id="sec-voting" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Vote <span class="hl">Results</span></div>
+          <div class="page-sub">Community voting overview — finalize tenders after voting closes</div>
+        </div>
+        <button class="btn btn-ghost" onclick="loadVoteResults()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
+      <div id="vote-wrap"><div class="empty"><div class="empty-i">🗳️</div><div class="empty-t">Connect wallet to load voting data</div></div></div>
+    </section>
+
+    <!-- ══ USER MANAGEMENT ══ -->
+    <section id="sec-users" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">User <span class="hl">Management</span></div>
+          <div class="page-sub">Approve or reject vendor registration requests</div>
+        </div>
+        <button class="btn btn-ghost" onclick="loadUsers()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
+      <div id="user-wrap"><div class="empty"><div class="empty-i">👥</div><div class="empty-t">Connect wallet to load users</div></div></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══════════════ SIDE PANEL ══════════════ -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="side-panel" id="side-panel">
+  <button class="sp-close" onclick="closePanel()"><i class="fas fa-arrow-right"></i> Close</button>
+  <div class="dp-no" id="dp-no">TENDER #—</div>
+  <div class="dp-title" id="dp-title">—</div>
+  <div class="dp-desc" id="dp-desc">—</div>
+  <div class="dp-meta">
+    <div class="dp-mc"><div class="dp-mk">Highest Bid</div><div class="dp-mv tg" id="dp-high">—</div></div>
+    <div class="dp-mc"><div class="dp-mk">Total Votes</div><div class="dp-mv tc" id="dp-tvotes">—</div></div>
+    <div class="dp-mc"><div class="dp-mk">Phase</div><div class="dp-mv" id="dp-status">—</div></div>
+    <div class="dp-mc"><div class="dp-mk">Voting Closes</div><div class="dp-mv mono" id="dp-vdeadline" style="font-size:.7rem;">—</div></div>
+  </div>
+  <div class="dp-sec" id="dp-bid-cnt"><i class="fas fa-trophy"></i> BIDDERS &amp; VOTES — 0</div>
+  <div id="dp-bidders"></div>
+  <div class="chart-box" id="dp-chart-box" style="display:none;">
+    <div class="chart-lbl">Bid vs Vote Comparison</div>
+    <canvas id="dp-chart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+/* ══ THEME ══ */
+(function(){
+  const t=localStorage.getItem('tc-theme')||'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('dn-lbl').textContent=t==='dark'?'NIGHT':'DAY';
+  document.getElementById('dn-icon').textContent=t==='dark'?'🌙':'☀️';
+})();
+function toggleTheme(){
+  const html=document.documentElement;
+  const next=html.getAttribute('data-theme')==='dark'?'light':'dark';
+  html.setAttribute('data-theme',next);
+  document.getElementById('dn-lbl').textContent=next==='dark'?'NIGHT':'DAY';
+  document.getElementById('dn-icon').textContent=next==='dark'?'🌙':'☀️';
+  localStorage.setItem('tc-theme',next);
+  if(ovChart)renderOvChart();
+}
+
+/* ══ CONFIG ══ */
+const CONTRACT_ADDRESS="0x93d2E2885C3fBC1bb2c3a7c9Fc0A89dFc416673a";
+const SEPOLIA_CHAIN_ID="0xaa36a7";
+const CONTRACT_ABI=[
+  "function owner() view returns (address)",
+  "function getPendingUsers() view returns (address[])",
+  "function getProfile(address) view returns (string,string,string,string,string,uint8,uint256,uint256)",
+  "function approveUser(address)",
+  "function rejectUser(address,string)",
+  "function tenderCount() view returns (uint256)",
+  // NEW 4-param createTender: title, desc, biddingMins, votingMins
+  "function createTender(string,string,uint256,uint256)",
+  // NEW tuple: id,title,desc,biddingDeadline,votingDeadline,creator,highestBid,highestBidder,ended,totalVotes,winner
+  "function tenders(uint256) view returns (uint256,string,string,uint256,uint256,address,uint256,address,bool,uint256,address)",
+  "function getBidders(uint256) view returns (address[])",
+  "function bids(uint256,address) view returns (uint256)",
+  "function getVoteCounts(uint256) view returns (address[],uint256[])",
+  "function finalizeTender(uint256)",
+];
+
+let provider,signer,contract;
+let allTenders=[],allBids=[];
+let dpChart=null,ovChart=null,cdTick=null;
+
+/* ══ HELPERS ══ */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtCd(ts){const diff=ts-Math.floor(Date.now()/1000);if(diff<=0)return{text:'CLOSED',open:false};const h=Math.floor(diff/3600),m=Math.floor((diff%3600)/60),s=diff%60;return{text:h>0?`${h}h ${m}m`:`${m}m ${s}s`,open:true}}
+function startCd(){if(cdTick)clearInterval(cdTick);cdTick=setInterval(()=>{document.querySelectorAll('[data-deadline]').forEach(el=>{const cd=fmtCd(Number(el.dataset.deadline));el.textContent=cd.text;el.className=el.className.replace(/cd-open|cd-closed/g,'').trim()+(cd.open?' cd-open':' cd-closed')})},1000)}
+
+function getTenderPhase(t){
+  const now=Math.floor(Date.now()/1000);
+  if(t.ended)return 'ended';
+  if(now<t.biddingDeadline)return 'bidding';
+  if(now<t.votingDeadline)return 'voting';
+  return 'closed';
+}
+function phaseBadge(p){
+  const m={bidding:['b-active','🔨 Bidding'],voting:['b-voting','🗳️ Voting'],closed:['b-pending','⏳ Awaiting'],ended:['b-finalized','✅ Finalized']};
+  const[cls,lbl]=m[p]||['b-outbid',p];
+  return`<span class="badge ${cls}">${lbl}</span>`;
+}
+
+/* ══ NAV ══ */
+const secMap={overview:'sec-overview',tenders:'sec-tenders',bids:'sec-bids',voting:'sec-voting',users:'sec-users'};
+const navEls=document.querySelectorAll('.nav-item');
+function showSection(name){
+  Object.values(secMap).forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  navEls.forEach(n=>n.classList.remove('active'));
+  document.getElementById(secMap[name])?.classList.add('active');
+  const idx=Object.keys(secMap).indexOf(name);
+  navEls[idx]?.classList.add('active');
+  if(contract){
+    if(name==='bids')    loadBidActivity();
+    if(name==='users')   loadUsers();
+    if(name==='tenders') renderTenderPanel();
+    if(name==='overview')renderFeed();
+    if(name==='voting')  loadVoteResults();
+  }
+}
+
+/* ══ WALLET ══ */
+async function initAdmin(){
+  const lbl=document.getElementById('wallet-lbl'),dot=document.getElementById('wdot');
+  try{
+    if(!window.ethereum){alert('MetaMask not detected');return;}
+    await window.ethereum.request({method:'eth_requestAccounts'});
+    const cid=await window.ethereum.request({method:'eth_chainId'});
+    if(cid!==SEPOLIA_CHAIN_ID)await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:SEPOLIA_CHAIN_ID}]});
+    provider=new ethers.BrowserProvider(window.ethereum);
+    signer=await provider.getSigner();
+    contract=new ethers.Contract(CONTRACT_ADDRESS,CONTRACT_ABI,signer);
+    const addr=await signer.getAddress();
+    lbl.textContent=addr.slice(0,6)+'…'+addr.slice(-4);
+    dot.classList.add('on');
+    const owner=await contract.owner();
+    if(addr.toLowerCase()!==owner.toLowerCase())alert('⚠️ Not the contract owner. Some actions will fail.');
+    await loadAll();
+  }catch(e){console.error(e);lbl.textContent='Failed';}
+}
+
+async function loadAll(){await loadTenders();await loadPendingCnt();renderFeed();renderTenderPanel();}
+
+/* ══ LOAD TENDERS ══ */
+async function loadTenders(){
+  allTenders=[];allBids=[];
+  try{
+    const cnt=Number(await contract.tenderCount());
+    let total=0;
+    for(let i=1;i<=cnt;i++){
+      const t=await contract.tenders(i);
+      const bdrs=await contract.getBidders(i);
+
+      // Fetch vote counts
+      let vMap={};
+      try{
+        const[vAddrs,vCounts]=await contract.getVoteCounts(i);
+        vAddrs.forEach((a,idx)=>{vMap[a.toLowerCase()]=Number(vCounts[idx]);});
+      }catch(_){}
+
+      const bArr=[];
+      for(const b of bdrs){
+        const amt=await contract.bids(i,b);
+        let name='—',org='—';
+        try{const p=await contract.getProfile(b);name=p[0];org=p[1];}catch(_){}
+        const votes=vMap[b.toLowerCase()]||0;
+        bArr.push({bidder:b,amount:amt,name,org,votes});
+        allBids.push({tid:i,ttitle:t[1],bidder:b,amount:amt,name,org,votes});
+      }
+      total+=bdrs.length;
+
+      allTenders.push({
+        id:i,title:t[1],desc:t[2],
+        biddingDeadline:Number(t[3]),
+        votingDeadline:Number(t[4]),
+        creator:t[5],hiBid:t[6],hiBidder:t[7],ended:t[8],
+        totalVotes:Number(t[9]),winner:t[10],
+        bids:bArr
+      });
+    }
+
+    const now=Math.floor(Date.now()/1000);
+    document.getElementById('stat-tenders').textContent=cnt;
+    document.getElementById('stat-active').textContent=allTenders.filter(t=>getTenderPhase(t)==='bidding').length;
+    document.getElementById('stat-voting').textContent=allTenders.filter(t=>getTenderPhase(t)==='voting').length;
+    document.getElementById('badge-bids').textContent=total;
+    document.getElementById('badge-voting').textContent=allTenders.filter(t=>getTenderPhase(t)==='voting'||getTenderPhase(t)==='closed').length;
+
+    const sel=document.getElementById('bid-filter');
+    sel.innerHTML='<option value="all">All Tenders</option>';
+    allTenders.forEach(t=>sel.innerHTML+=`<option value="${t.id}">#${t.id} — ${esc(t.title)}</option>`);
+    document.getElementById('feed-ts').textContent='Synced '+new Date().toLocaleTimeString();
+  }catch(e){console.error(e);}
+}
+
+async function loadPendingCnt(){
+  try{
+    const users=await contract.getPendingUsers();
+    let cnt=0;
+    for(const u of users){const p=await contract.getProfile(u);if(Number(p[5])===1)cnt++;}
+    document.getElementById('stat-pending').textContent=cnt;
+    document.getElementById('badge-pending').textContent=cnt;
+  }catch(e){console.error(e);}
+}
+
+/* ══ OVERVIEW FEED ══ */
+function renderFeed(){
+  const tbody=document.getElementById('feed-body');
+  if(!allBids.length){tbody.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-i">📭</div><div class="empty-t">No bids on-chain yet.</div></div></td></tr>`;return;}
+  const rows=[...allBids].sort((a,b)=>b.tid-a.tid||Number(b.amount)-Number(a.amount));
+  tbody.innerHTML=rows.map(r=>{
+    const t=allTenders.find(x=>x.id===r.tid);
+    const phase=t?getTenderPhase(t):'ended';
+    const leading=t&&t.hiBidder&&t.hiBidder.toLowerCase()===r.bidder.toLowerCase();
+    const deadlineTs=phase==='voting'?t.votingDeadline:t?.biddingDeadline||0;
+    const cd=deadlineTs?fmtCd(deadlineTs):{text:'—',open:false};
+    return`<tr>
+      <td><span class="tc fw7">#${r.tid}</span><span class="t2 mono" style="margin-left:6px;font-size:.72rem;">${esc(r.ttitle)}</span></td>
+      <td><div class="fw7 mono">${r.bidder.slice(0,6)}…${r.bidder.slice(-4)}</div><div class="mono t2" style="font-size:.68rem;">${esc(r.name)} · ${esc(r.org)}</div></td>
+      <td class="tg fw7">${Number(r.amount).toLocaleString()} Wei</td>
+      <td>${phaseBadge(phase)}</td>
+      <td class="${cd.open?'cd-open':'cd-closed'}" data-deadline="${deadlineTs}">${cd.text}</td>
+    </tr>`;
+  }).join('');
+  startCd();
+}
+
+/* ══ TENDER PANEL ══ */
+function renderTenderPanel(){
+  const panel=document.getElementById('tender-table-panel');
+  if(!allTenders.length){panel.innerHTML=`<div class="empty"><div class="empty-i">📭</div><div class="empty-t">No tenders deployed yet.</div></div>`;return;}
+  panel.innerHTML=`
+    <div class="p-hd"><div class="p-title">All Deployed Tenders</div></div>
+    <table class="adm-table">
+      <thead><tr><th>#</th><th>Title</th><th>Bids</th><th>Votes</th><th>Highest Bid</th><th>Phase</th><th>Countdown</th><th>Actions</th></tr></thead>
+      <tbody>${allTenders.map(t=>{
+        const phase=getTenderPhase(t);
+        const deadlineTs=phase==='voting'?t.votingDeadline:t.biddingDeadline;
+        const cd=fmtCd(deadlineTs);
+        return`<tr>
+          <td class="tc fw7">${t.id}</td>
+          <td class="fw7">${esc(t.title)}</td>
+          <td>${t.bids.length}</td>
+          <td class="tc fw7">${t.totalVotes}</td>
+          <td class="tg fw7">${Number(t.hiBid).toLocaleString()} Wei</td>
+          <td>${phaseBadge(phase)}</td>
+          <td class="${cd.open?'cd-open':'cd-closed'}" data-deadline="${deadlineTs}">${cd.text}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="openDetail(${t.id})"><i class="fas fa-binoculars"></i> View</button>
+            ${(phase==='closed')?`<button class="btn btn-amber btn-sm" onclick="finalizeTenderAdmin(${t.id})"><i class="fas fa-flag-checkered"></i> Finalize</button>`:''}
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  startCd();
+}
+
+/* ══ BID ACTIVITY ══ */
+function loadBidActivity(){if(!contract){initAdmin();return;}loadTenders().then(()=>{filterBids();renderOvChart();});}
+function filterBids(){
+  const fid=document.getElementById('bid-filter').value;
+  const wrap=document.getElementById('bid-wrap');
+  const tlist=fid==='all'?allTenders:allTenders.filter(t=>t.id===Number(fid));
+  if(!tlist.length){wrap.innerHTML=`<div class="empty"><div class="empty-i">📭</div><div class="empty-t">No activity found.</div></div>`;return;}
+  wrap.innerHTML=tlist.map(t=>{
+    const phase=getTenderPhase(t);
+    const sorted=[...t.bids].sort((a,b)=>b.votes-a.votes||Number(b.amount)-Number(a.amount));
+    const total=t.totalVotes;
+    const bidsHtml=sorted.length?sorted.map((b,i)=>{
+      const rCls=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+      const leading=t.hiBidder&&t.hiBidder.toLowerCase()===b.bidder.toLowerCase();
+      const pct=total>0?Math.round((b.votes/total)*100):0;
+      return`<div>
+        <div class="bid-row">
+          <div class="rank ${rCls}">${i+1}</div>
+          <div><div class="b-addr">${b.bidder.slice(0,8)}…${b.bidder.slice(-6)}</div><div class="b-meta">${esc(b.name)} · ${esc(b.org)}</div></div>
+          <div class="b-eth">${Number(b.amount).toLocaleString()} Wei</div>
+          <div style="text-align:right;">
+            ${leading?'<span class="badge b-leading">Leading</span>':'<span class="badge b-outbid">Outbid</span>'}
+            <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--cyan);margin-top:3px;">${b.votes} vote${b.votes!==1?'s':''}</div>
+          </div>
+        </div>
+        <div class="vote-bar-wrap">
+          <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%;background:${i===0?'linear-gradient(90deg,var(--cyan),var(--violet))':'var(--violet)'}"></div></div>
+          <span class="vote-bar-pct">${pct}%</span>
+        </div>
+      </div>`;
+    }).join(''):`<div style="padding:1rem 1.4rem;color:var(--text-3);font-family:var(--font-mono);font-size:.78rem;">No bids placed yet.</div>`;
+
+    const deadlineTs=phase==='voting'?t.votingDeadline:t.biddingDeadline;
+    return`
+      <div class="bid-block">
+        <div class="bb-head">
+          <div>
+            <div class="bb-no">Tender #${t.id}</div>
+            <div class="bb-name">${esc(t.title)}</div>
+            <div class="bb-desc">${esc(t.desc)}</div>
+          </div>
+          <div class="bb-right">
+            <div class="bb-cnt">${sorted.length} bid${sorted.length!==1?'s':''} · <span style="color:var(--cyan);">${t.totalVotes}</span> vote${t.totalVotes!==1?'s':''}</div>
+            <div style="margin-bottom:5px;">${phaseBadge(phase)}</div>
+            <div class="${fmtCd(deadlineTs).open?'cd-open':'cd-closed'} mono" data-deadline="${deadlineTs}" style="font-size:.76rem;">${fmtCd(deadlineTs).text}</div>
+          </div>
+        </div>
+        ${bidsHtml}
+        ${sorted.length?`<div style="padding:.75rem 1.4rem;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="openDetail(${t.id})"><i class="fas fa-chart-bar"></i> Full Analysis</button>
+          ${phase==='closed'?`<button class="btn btn-amber btn-sm" onclick="finalizeTenderAdmin(${t.id})"><i class="fas fa-flag-checkered"></i> Finalize</button>`:''}
+        </div>`:''}
+      </div>`;
+  }).join('');
+  startCd();
+}
+
+function renderOvChart(){
+  if(!allTenders.length)return;
+  document.getElementById('ov-chart-box').style.display='block';
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const tc=dark?'#4B6080':'#9AADC8';
+  const gc=dark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+  const ctx=document.getElementById('ov-chart').getContext('2d');
+  if(ovChart)ovChart.destroy();
+  ovChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:allTenders.map(t=>`#${t.id} ${t.title.slice(0,10)}`),
+      datasets:[
+        {label:'Bid Count',data:allTenders.map(t=>t.bids.length),backgroundColor:'rgba(0,229,255,.35)',borderColor:'rgba(0,229,255,.9)',borderWidth:2,borderRadius:7},
+        {label:'Vote Count',data:allTenders.map(t=>t.totalVotes),backgroundColor:'rgba(155,89,247,.3)',borderColor:'rgba(155,89,247,.9)',borderWidth:2,borderRadius:7,yAxisID:'y2'}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{labels:{color:tc,font:{family:'Fira Code',size:11}}}},scales:{x:{ticks:{color:tc,font:{family:'Fira Code',size:10}},grid:{color:gc}},y:{ticks:{color:tc,font:{family:'Fira Code',size:10}},grid:{color:gc}},y2:{position:'right',ticks:{color:tc,font:{family:'Fira Code',size:10}},grid:{display:false}}}}
+  });
+}
+
+/* ══ VOTE RESULTS ══ */
+async function loadVoteResults(){
+  if(!contract){initAdmin();return;}
+  const wrap=document.getElementById('vote-wrap');
+  wrap.innerHTML=`<div class="empty"><div class="empty-i"><i class="fas fa-spinner spin"></i></div><div class="empty-t">Loading…</div></div>`;
+  if(!allTenders.length)await loadTenders();
+
+  const relevant=allTenders.filter(t=>getTenderPhase(t)!=='bidding');
+  if(!relevant.length){wrap.innerHTML=`<div class="empty"><div class="empty-i">🗳️</div><div class="empty-t">No tenders in voting or finalized phase yet.</div></div>`;return;}
+
+  const voting=relevant.filter(t=>getTenderPhase(t)==='voting');
+  const closed=relevant.filter(t=>getTenderPhase(t)==='closed');
+  const ended=relevant.filter(t=>t.ended);
+
+  let html='';
+
+  if(voting.length){
+    html+=`<div class="row-section-hd tc"><i class="fas fa-vote-yea"></i> VOTING LIVE (${voting.length})</div>`;
+    html+=voting.map(t=>buildVoteCard(t)).join('');
+  }
+  if(closed.length){
+    html+=`<div class="row-section-hd ta" style="margin-top:1.5rem;"><i class="fas fa-hourglass-end"></i> AWAITING FINALIZATION (${closed.length})</div>`;
+    html+=closed.map(t=>buildVoteCard(t)).join('');
+  }
+  if(ended.length){
+    html+=`<div class="row-section-hd t2" style="margin-top:1.5rem;"><i class="fas fa-check-double"></i> FINALIZED (${ended.length})</div>`;
+    html+=ended.map(t=>buildVoteCard(t)).join('');
+  }
+
+  wrap.innerHTML=html;
+  startCd();
+}
+
+function buildVoteCard(t){
+  const phase=getTenderPhase(t);
+  const sorted=[...t.bids].sort((a,b)=>b.votes-a.votes||Number(b.amount)-Number(a.amount));
+  const total=t.totalVotes;
+  const deadlineTs=phase==='voting'?t.votingDeadline:0;
+
+  const rows=sorted.map((b,i)=>{
+    const rCls=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const pct=total>0?Math.round((b.votes/total)*100):0;
+    const isWinner=t.ended&&t.winner&&b.bidder.toLowerCase()===t.winner.toLowerCase();
+    return`<div>
+      <div class="bid-row">
+        <div class="rank ${rCls}">${i+1}</div>
+        <div>
+          <div class="b-addr">${b.bidder.slice(0,10)}…${b.bidder.slice(-6)}
+            ${isWinner?'<span class="badge b-winner" style="font-size:.55rem;">🏆 Winner</span>':''}
+          </div>
+          <div class="b-meta">${esc(b.name)} · ${esc(b.org)}</div>
+        </div>
+        <div class="b-eth">${Number(b.amount).toLocaleString()} Wei</div>
+        <div style="font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--cyan);text-align:right;">${b.votes} vote${b.votes!==1?'s':''}</div>
+      </div>
+      <div class="vote-bar-wrap">
+        <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%;background:${i===0?'linear-gradient(90deg,var(--cyan),var(--violet))':'var(--violet)'}"></div></div>
+        <span class="vote-bar-pct">${pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`
+    <div class="bid-block" style="margin-bottom:1rem;">
+      <div class="bb-head">
+        <div>
+          <div class="bb-no">TENDER #${t.id}</div>
+          <div class="bb-name">${esc(t.title)}</div>
+          <div class="bb-desc">${esc(t.desc)}</div>
+          ${deadlineTs?`<div style="margin-top:5px;font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);">Voting closes: <span class="cd-open" data-deadline="${deadlineTs}">${fmtCd(deadlineTs).text}</span></div>`:''}
+        </div>
+        <div class="bb-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+          ${phaseBadge(phase)}
+          <div class="bb-cnt">${sorted.length} bidder${sorted.length!==1?'s':''} · <span style="color:var(--cyan);font-weight:700;">${total}</span> total vote${total!==1?'s':''}</div>
+          ${t.ended&&t.winner&&t.winner!=='0x0000000000000000000000000000000000000000'?`<div style="font-family:var(--font-mono);font-size:.62rem;color:#FFD700;">🏆 ${t.winner.slice(0,8)}…${t.winner.slice(-4)}</div>`:''}
+        </div>
+      </div>
+      ${rows||`<div style="padding:1rem 1.4rem;color:var(--text-3);font-size:.78rem;font-family:var(--font-mono);">No bids were placed.</div>`}
+      ${phase==='closed'?`
+        <div style="padding:.85rem 1.4rem;border-top:1px solid var(--border);background:linear-gradient(90deg,rgba(255,184,0,.05),transparent);">
+          <button class="btn btn-amber btn-sm" onclick="finalizeTenderAdmin(${t.id})">
+            <i class="fas fa-flag-checkered"></i> Finalize Tender — Declare Winner
+          </button>
+          <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--text-3);margin-left:12px;">Voting window is closed. Winner will be the highest-voted bidder.</span>
+        </div>`:''
+      }
+    </div>`;
+}
+
+/* ══ FINALIZE ══ */
+async function finalizeTenderAdmin(id){
+  if(!confirm(`Finalize tender #${id}? This declares the winner and cannot be undone.`))return;
+  try{
+    const tx=await contract.finalizeTender(id);
+    await tx.wait();
+    alert('✅ Tender finalized. Winner declared on-chain.');
+    await loadTenders();renderTenderPanel();loadVoteResults();
+  }catch(e){alert('❌ '+(e.reason||e.message));}
+}
+
+/* ══ DETAIL PANEL ══ */
+function openDetail(id){
+  const t=allTenders.find(x=>x.id===id);if(!t)return;
+  const phase=getTenderPhase(t);
+  const sorted=[...t.bids].sort((a,b)=>b.votes-a.votes||Number(b.amount)-Number(a.amount));
+  const total=t.totalVotes;
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+
+  document.getElementById('dp-no').textContent=`TENDER #${id}`;
+  document.getElementById('dp-title').textContent=t.title;
+  document.getElementById('dp-desc').textContent=t.desc;
+  document.getElementById('dp-high').textContent=Number(t.hiBid).toLocaleString()+' Wei';
+  document.getElementById('dp-tvotes').textContent=total;
+  document.getElementById('dp-status').innerHTML=phaseBadge(phase);
+  document.getElementById('dp-vdeadline').textContent=new Date(t.votingDeadline*1000).toLocaleString();
+
+  document.getElementById('dp-bid-cnt').innerHTML=`<i class="fas fa-trophy"></i> BIDDERS & VOTES — ${sorted.length}`;
+
+  const dpB=document.getElementById('dp-bidders');
+  if(!sorted.length){
+    dpB.innerHTML=`<div style="color:var(--text-3);font-family:var(--font-mono);font-size:.78rem;padding:.75rem 0;">No bids placed yet.</div>`;
+    document.getElementById('dp-chart-box').style.display='none';
+  }else{
+    dpB.innerHTML=sorted.map((b,i)=>{
+      const rCls=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+      const isWinner=t.ended&&t.winner&&b.bidder.toLowerCase()===t.winner.toLowerCase();
+      const pct=total>0?Math.round((b.votes/total)*100):0;
+      return`<div>
+        <div class="bid-row">
+          <div class="rank ${rCls}">${i+1}</div>
+          <div>
+            <div class="b-addr">${b.bidder.slice(0,10)}…${b.bidder.slice(-6)}
+              ${isWinner?'<span class="badge b-winner" style="font-size:.55rem;">🏆</span>':''}
+            </div>
+            <div class="b-meta">${esc(b.name)} · ${esc(b.org)}</div>
+          </div>
+          <div class="b-eth">${Number(b.amount).toLocaleString()} Wei</div>
+          <div style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:var(--cyan);text-align:right;">${b.votes} vote${b.votes!==1?'s':''}</div>
+        </div>
+        <div class="vote-bar-wrap">
+          <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%;background:${i===0?'linear-gradient(90deg,var(--cyan),var(--violet))':'var(--violet)'}"></div></div>
+          <span class="vote-bar-pct">${pct}%</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('dp-chart-box').style.display='block';
+    const tc=dark?'#4B6080':'#9AADC8';
+    const gc=dark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+    const ctx=document.getElementById('dp-chart').getContext('2d');
+    if(dpChart)dpChart.destroy();
+    dpChart=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:sorted.map((b,i)=>`#${i+1} ${b.bidder.slice(0,6)}…`),
+        datasets:[
+          {label:'Bid (Wei)',data:sorted.map(b=>Number(b.amount)),backgroundColor:sorted.map((_,i)=>i===0?'rgba(0,229,255,.55)':'rgba(155,89,247,.38)'),borderColor:sorted.map((_,i)=>i===0?'rgba(0,229,255,.95)':'rgba(155,89,247,.9)'),borderWidth:2,borderRadius:9},
+          {label:'Votes',data:sorted.map(b=>b.votes),backgroundColor:'rgba(0,214,143,.3)',borderColor:'rgba(0,214,143,.9)',borderWidth:2,borderRadius:9,yAxisID:'y2'}
+        ]
+      },
+      options:{responsive:true,plugins:{legend:{labels:{color:tc,font:{family:'Fira Code',size:11}}}},scales:{x:{ticks:{color:tc,font:{family:'Fira Code',size:10}},grid:{color:gc}},y:{ticks:{color:tc,font:{family:'Fira Code',size:10}},grid:{color:gc}},y2:{position:'right',ticks:{color:tc,font:{family:'Fira Code',size:10}},grid:{display:false}}}}
+    });
+  }
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('side-panel').classList.add('open');
+}
+function closePanel(){document.getElementById('overlay').classList.remove('open');document.getElementById('side-panel').classList.remove('open');}
+
+/* ══ CREATE TENDER ══ */
+async function createTenderAdmin(){
+  const al=document.getElementById('create-alert');
+  const sh=(t,m)=>{al.className=`adm-alert al-${t} show`;al.innerHTML=m;};
+  try{
+    if(!contract)await initAdmin();
+    const title=document.getElementById('new-title').value.trim();
+    const desc=document.getElementById('new-desc').value.trim();
+    const mins=Number(document.getElementById('new-dur').value);
+    const vmins=Number(document.getElementById('new-vdur').value);
+    if(!title||!desc||!mins||mins<=0||!vmins||vmins<=0){sh('e','⚠️ Fill in all fields including the voting window duration.');return;}
+    sh('i','<i class="fas fa-spinner spin"></i> Submitting — confirm in MetaMask…');
+    const tx=await contract.createTender(title,desc,mins,vmins);
+    sh('i',`<i class="fas fa-spinner spin"></i> Tx: <code>${tx.hash.slice(0,14)}…</code>`);
+    await tx.wait();
+    sh('s',`✅ Deployed! Bidding: ${mins}m · Voting window: ${vmins}m <code>${tx.hash.slice(0,14)}…</code>`);
+    ['new-title','new-desc','new-dur','new-vdur'].forEach(id=>document.getElementById(id).value='');
+    await loadTenders();renderTenderPanel();
+  }catch(e){sh('e','❌ '+(e.reason||e.message||'Failed'));}
+}
+
+/* ══ USER MANAGEMENT ══ */
+async function loadUsers(){
+  if(!contract){initAdmin();return;}
+  const wrap=document.getElementById('user-wrap');
+  wrap.innerHTML=`<div class="empty"><div class="empty-i"><i class="fas fa-spinner spin"></i></div><div class="empty-t">Loading…</div></div>`;
+  try{
+    const users=await contract.getPendingUsers();
+    const avGrads=['linear-gradient(135deg,var(--cyan),var(--violet))','linear-gradient(135deg,var(--amber),var(--orange))','linear-gradient(135deg,var(--green),var(--cyan))','linear-gradient(135deg,var(--violet),var(--pink))','linear-gradient(135deg,var(--orange),var(--red))'];
+    const statusMap={0:'None',1:'Pending',2:'Approved',3:'Rejected'};
+    const badgeMap={1:'b-pending',2:'b-approved',3:'b-rejected'};
+    let pendHtml='',revHtml='',pendCnt=0;
+
+    for(const addr of users){
+      const p=await contract.getProfile(addr);
+      const status=Number(p[5]);
+      const init=(p[0]||'?')[0].toUpperCase();
+      const av=avGrads[addr.charCodeAt(2)%avGrads.length];
+      const reqDate=new Date(Number(p[6])*1000).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+      const card=`
+        <div class="user-card">
+          <div class="u-av" style="background:${av}">${init}</div>
+          <div class="u-info">
+            <div class="u-name">${esc(p[0])}</div>
+            <div class="u-addr">${addr}</div>
+            <div class="u-meta">${esc(p[1])} · ${esc(p[2])} · ${esc(p[3])}</div>
+            <div class="mono t2" style="font-size:.62rem;margin-top:4px;">Requested ${reqDate}</div>
+          </div>
+          <div class="u-actions">
+            <span class="badge ${badgeMap[status]||''}">${statusMap[status]}</span>
+            ${status===1?`
+              <button class="btn btn-ok btn-sm" onclick="approveUser('${addr}')"><i class="fas fa-check"></i> Approve</button>
+              <button class="btn btn-no btn-sm" onclick="rejectPrompt('${addr}')"><i class="fas fa-times"></i> Reject</button>
+            `:''}
+          </div>
+        </div>`;
+      if(status===1){pendHtml+=card;pendCnt++;}
+      else revHtml+=card;
+    }
+    document.getElementById('stat-pending').textContent=pendCnt;
+    document.getElementById('badge-pending').textContent=pendCnt;
+    wrap.innerHTML='';
+    if(pendHtml)wrap.innerHTML+=`<div class="row-section-hd ta"><i class="fas fa-hourglass-half"></i> PENDING REVIEW (${pendCnt})</div>${pendHtml}`;
+    if(revHtml) wrap.innerHTML+=`<div class="row-section-hd t2" style="margin-top:1.5rem;"><i class="fas fa-check-double"></i> REVIEWED</div>${revHtml}`;
+    if(!pendHtml&&!revHtml)wrap.innerHTML=`<div class="empty"><div class="empty-i">👤</div><div class="empty-t">No users in queue.</div></div>`;
+  }catch(e){wrap.innerHTML=`<div class="empty" style="color:var(--red);"><div class="empty-i">⚠️</div><div class="empty-t">${esc(e.reason||e.message)}</div></div>`;}
+}
+async function approveUser(addr){try{const tx=await contract.approveUser(addr);await tx.wait();alert('✅ Approved.');loadUsers();}catch(e){alert('❌ '+(e.reason||e.message));}}
+async function rejectPrompt(addr){const r=prompt('Rejection reason:','Not eligible');if(r===null)return;try{const tx=await contract.rejectUser(addr,r);await tx.wait();alert('✅ Rejected.');loadUsers();}catch(e){alert('❌ '+(e.reason||e.message));}}
+
+window.addEventListener('load',()=>{
+  if(window.ethereum){
+    initAdmin();
+    window.ethereum.on('accountsChanged',()=>window.location.reload());
+    window.ethereum.on('chainChanged',()=>window.location.reload());
+  }
+});
+</script>
+{% endblock %}
