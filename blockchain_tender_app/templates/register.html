@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-viewport">
+  <div class="auth-card" style="max-width:520px;">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⛓</div>
+      <div class="auth-logo-wordmark">TENDER<em>CORE</em></div>
+    </div>
+    <div class="auth-subtitle">Vendor Onboarding Portal</div>
+
+    <!-- Alert box -->
+    <div class="auth-error" id="reg-alert" style="background:rgba(0,214,143,.09);border-color:rgba(0,214,143,.28);color:var(--green);">
+      <i class="fas fa-circle-check"></i>
+      <span id="reg-alert-msg"></span>
+    </div>
+    <div class="auth-error" id="reg-error">
+      <i class="fas fa-circle-exclamation"></i>
+      <span id="reg-error-msg"></span>
+    </div>
+
+    <!-- Form -->
+    <div class="field-group">
+
+      <div>
+        <label class="field-label">Full Name</label>
+        <input type="text" id="fullName" class="auth-input" placeholder="Jane Smith">
+      </div>
+
+      <div>
+        <label class="field-label">Company / Organisation</label>
+        <input type="text" id="organization" class="auth-input" placeholder="Acme Corp Ltd">
+      </div>
+
+      <div class="field-row">
+        <div>
+          <label class="field-label">Work Email</label>
+          <input type="email" id="email" class="auth-input" placeholder="jane@acme.com">
+        </div>
+        <div>
+          <label class="field-label">Phone</label>
+          <input type="tel" id="phone" class="auth-input" placeholder="+1 555 0100">
+        </div>
+      </div>
+
+      <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+        <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">System Role</div>
+        <div style="font-size:.85rem;color:var(--text-2);">
+          <i class="fas fa-shield-halved" style="color:var(--green);margin-right:7px;"></i>
+          Bidding Vendor — <span style="color:var(--text-3);font-size:.78rem;">All new registrations are assigned Vendor role</span>
+        </div>
+      </div>
+
+    </div>
+
+    <button class="btn btn-wallet btn-full" onclick="requestRegistration()" id="reg-btn">
+      <i class="fas fa-file-signature"></i>
+      Sign &amp; Submit Application
+    </button>
+
+    <hr class="auth-divider">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="dn-toggle">
+        <span class="dn-label" id="dn-lbl">NIGHT</span>
+        <button class="dn-track" onclick="toggleTheme()" aria-label="Toggle theme">
+          <div class="dn-stars"><span></span><span></span><span></span></div>
+          <div class="dn-clouds"></div>
+          <div class="dn-thumb"><span class="dn-icon" id="dn-icon">🌙</span></div>
+        </button>
+      </div>
+      <div class="auth-footer">
+        <a href="/login">Return to Login</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script>
+const CONTRACT_ADDRESS = "0x93d2E2885C3fBC1bb2c3a7c9Fc0A89dFc416673a";
+const CONTRACT_ABI = [
+  "function requestRegistration(string,string,string,string)",
+  "function getProfile(address) view returns (string,string,string,string,string,uint8,uint256,uint256)"
+];
+
+let provider, signer, contract;
+
+async function connectWallet() {
+  if (!window.ethereum) throw new Error("MetaMask not detected. Please install it.");
+  await window.ethereum.request({ method: "eth_requestAccounts" });
+  provider = new ethers.BrowserProvider(window.ethereum);
+  signer = await provider.getSigner();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+}
+
+async function requestRegistration() {
+  const errDiv   = document.getElementById('reg-error');
+  const alertDiv = document.getElementById('reg-alert');
+  const errMsg   = document.getElementById('reg-error-msg');
+  const alertMsg = document.getElementById('reg-alert-msg');
+  errDiv.classList.remove('show');
+  alertDiv.classList.remove('show');
+
+  const fullName     = document.getElementById('fullName').value.trim();
+  const organization = document.getElementById('organization').value.trim();
+  const email        = document.getElementById('email').value.trim();
+  const phone        = document.getElementById('phone').value.trim();
+
+  if (!fullName || !organization) {
+    errMsg.textContent = 'Full Name and Organisation are required.';
+    errDiv.classList.add('show');
+    return;
+  }
+
+  const btn = document.getElementById('reg-btn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner spin"></i> Submitting…';
+  btn.disabled = true;
+
+  try {
+    await connectWallet();
+
+    // Contract only takes 4 params (no role — always Vendor)
+    const tx = await contract.requestRegistration(fullName, organization, email, phone);
+    btn.innerHTML = '<i class="fas fa-spinner spin"></i> Waiting for confirmation…';
+    await tx.wait();
+
+    alertMsg.textContent = 'Application submitted! Awaiting admin approval.';
+    alertDiv.classList.add('show');
+
+    // Clear form
+    ['fullName','organization','email','phone'].forEach(id => document.getElementById(id).value = '');
+
+  } catch (err) {
+    errMsg.textContent = err.reason || err.message || 'Registration failed.';
+    errDiv.classList.add('show');
+  } finally {
+    btn.innerHTML = orig;
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

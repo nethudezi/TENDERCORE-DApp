@@ -1,0 +1,842 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="adm-header">
+  <div class="logo">
+    <div class="logo-icon">⛓</div>
+    <div><div class="logo-wordmark">TENDER<em>CORE</em></div></div>
+    <span class="logo-sep">/</span>
+    <span class="logo-tag">DASHBOARD</span>
+  </div>
+  <div class="header-right">
+    <div class="dn-toggle">
+      <span class="dn-label" id="dn-lbl">NIGHT</span>
+      <button class="dn-track" onclick="toggleTheme()" aria-label="Toggle theme">
+        <div class="dn-stars"><span></span><span></span><span></span></div>
+        <div class="dn-clouds"></div>
+        <div class="dn-thumb"><span class="dn-icon" id="dn-icon">🌙</span></div>
+      </button>
+    </div>
+    <button class="wallet-chip" onclick="initDashboard()">
+      <span class="wdot" id="wdot"></span>
+      <span id="wallet-lbl">Connect Wallet</span>
+    </button>
+    <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Logout</a>
+  </div>
+</header>
+
+<!-- ══════════════ SHELL ══════════════ -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-env">
+      <div class="env-chip"><span class="env-dot"></span>Sepolia Testnet</div>
+    </div>
+    <div class="nav-group">Overview</div>
+    <div class="nav-item nav-item-ov active" data-sec="overview" onclick="showSection('overview',this)">
+      <div class="nav-ic tc"><i class="fas fa-rocket"></i></div> Overview
+    </div>
+    <div class="nav-group">Marketplace</div>
+    <div class="nav-item nav-item-ten" data-sec="tenders" onclick="showSection('tenders',this)">
+      <div class="nav-ic tv"><i class="fas fa-file-invoice-dollar"></i></div> Active Tenders
+    </div>
+    <div class="nav-item nav-item-bid" data-sec="mybids" onclick="showSection('mybids',this)">
+      <div class="nav-ic ta"><i class="fas fa-gavel"></i></div> My Bids
+      <span class="nav-badge" id="badge-mybids">0</span>
+    </div>
+    <div class="nav-group">Governance</div>
+    <div class="nav-item nav-item-usr" data-sec="vote" onclick="showSection('vote',this)">
+      <div class="nav-ic tg"><i class="fas fa-vote-yea"></i></div> Cast Votes
+      <span class="nav-badge" id="badge-vote" style="background:var(--green);">0</span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+
+    <!-- ══ OVERVIEW ══ -->
+    <section id="sec-overview" class="adm-section active">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Welcome, <span class="hl">{{ current_user[:10] }}…</span></div>
+          <div class="page-sub">Your vendor dashboard — live blockchain procurement</div>
+        </div>
+        <button class="btn btn-ghost" onclick="initDashboard()"><i class="fas fa-rotate"></i> Sync</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card sc1">
+          <div class="s-icon"><i class="fas fa-file-contract"></i></div>
+          <div class="s-label">Total Tenders</div>
+          <div class="s-value" id="stat-tenders">—</div>
+          <div class="s-sub">On-chain contracts</div>
+        </div>
+        <div class="stat-card sc2">
+          <div class="s-icon"><i class="fas fa-bolt"></i></div>
+          <div class="s-label">Open for Bidding</div>
+          <div class="s-value" id="stat-active">—</div>
+          <div class="s-sub">Accepting bids now</div>
+        </div>
+        <div class="stat-card sc3">
+          <div class="s-icon"><i class="fas fa-vote-yea"></i></div>
+          <div class="s-label">Voting Open</div>
+          <div class="s-value" id="stat-voting">—</div>
+          <div class="s-sub">Awaiting your vote</div>
+        </div>
+        <div class="stat-card sc4">
+          <div class="s-icon"><i class="fas fa-trophy"></i></div>
+          <div class="s-label">My Leading Bids</div>
+          <div class="s-value" id="stat-leading">—</div>
+          <div class="s-sub">You're currently winning</div>
+        </div>
+      </div>
+
+      <!-- Submit Bid -->
+      <div class="panel">
+        <div class="p-hd">
+          <div class="p-title"><i class="fas fa-pen-nib" style="color:var(--green)"></i> Submit a Bid</div>
+        </div>
+        <div class="form-row" style="grid-template-columns:1fr 1fr auto;">
+          <div class="fl">
+            <label>Select Tender</label>
+            <select id="bid-tid" class="adm-input">
+              <option disabled selected value="">Loading tenders…</option>
+            </select>
+          </div>
+          <div class="fl">
+            <label>Bid Amount (Wei)</label>
+            <input type="number" id="amount" class="adm-input" placeholder="e.g. 5000000000000000">
+          </div>
+          <div class="fl">
+            <label style="opacity:0">x</label>
+            <button class="btn btn-success" onclick="submitBidOnChain()" style="width:100%;">
+              <i class="fas fa-signature"></i> Sign &amp; Bid
+            </button>
+          </div>
+        </div>
+        <div style="padding:0 1.4rem 1.2rem;"><div class="adm-alert" id="bid-alert"></div></div>
+      </div>
+
+      <!-- Phase Timeline -->
+      <div class="panel" id="phase-panel" style="display:none;">
+        <div class="p-hd"><div class="p-title"><i class="fas fa-timeline" style="color:var(--cyan)"></i> Tender Phase Status</div></div>
+        <div id="phase-list" style="padding:1rem 1.4rem;display:flex;flex-direction:column;gap:.6rem;"></div>
+      </div>
+    </section>
+
+    <!-- ══ ACTIVE TENDERS ══ -->
+    <section id="sec-tenders" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Active <span class="hl">Tenders</span></div>
+          <div class="page-sub">Browse open procurement contracts</div>
+        </div>
+        <button class="btn btn-ghost" onclick="loadTenders()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
+      <div id="tender-list">
+        <div class="empty"><div class="empty-i">⛓</div><div class="empty-t">Connect wallet to load tenders</div></div>
+      </div>
+    </section>
+
+    <!-- ══ MY BIDS ══ -->
+    <section id="sec-mybids" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">My <span class="hl">Bids</span></div>
+          <div class="page-sub">All bids you have submitted on-chain</div>
+        </div>
+        <button class="btn btn-ghost" onclick="renderMyBids()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
+      <div id="mybid-list">
+        <div class="empty"><div class="empty-i">🔗</div><div class="empty-t">Connect wallet to see your bids</div></div>
+      </div>
+    </section>
+
+    <!-- ══ VOTE ══ -->
+    <section id="sec-vote" class="adm-section">
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Cast <span class="hl">Votes</span></div>
+          <div class="page-sub">Vote for the best bidder on each tender — auction-style community governance</div>
+        </div>
+        <button class="btn btn-ghost" onclick="renderVoteSection()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
+
+      <!-- How it works -->
+      <div style="background:linear-gradient(135deg,rgba(0,214,143,.06),rgba(0,229,255,.04));border:1px solid rgba(0,214,143,.18);border-radius:14px;padding:1rem 1.4rem;margin-bottom:1.25rem;display:flex;gap:1.25rem;align-items:flex-start;">
+        <div style="font-size:1.5rem;opacity:.6;">⚖️</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:4px;">How Voting Works</div>
+          <div style="font-size:.82rem;color:var(--text-2);line-height:1.6;">
+            After bidding closes, a <span style="color:var(--green);font-weight:700;">voting window</span> opens.
+            Every approved vendor gets <span style="color:var(--cyan);font-weight:700;">one vote</span> per tender — you cannot vote for yourself.
+            The bidder with the most community votes <span style="color:var(--amber);font-weight:700;">wins the tender</span>.
+            Ties are broken by the highest bid amount.
+          </div>
+        </div>
+      </div>
+
+      <div id="vote-list">
+        <div class="empty"><div class="empty-i">🗳️</div><div class="empty-t">Connect wallet to see voting rounds</div></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══════════════ SIDE PANEL ══════════════ -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="side-panel" id="side-panel">
+  <button class="sp-close" onclick="closePanel()"><i class="fas fa-arrow-right"></i> Close</button>
+  <div class="dp-no" id="dp-no">TENDER #—</div>
+  <div class="dp-title" id="dp-title">—</div>
+  <div class="dp-desc" id="dp-desc" style="font-size:.8rem;color:var(--text-2);margin-bottom:1rem;"></div>
+
+  <!-- Phase indicator in panel -->
+  <div id="dp-phase-row" style="margin-bottom:1.25rem;"></div>
+
+  <div class="dp-meta">
+    <div class="dp-mc"><div class="dp-mk">Highest Bid</div><div class="dp-mv tg" id="dp-high">—</div></div>
+    <div class="dp-mc"><div class="dp-mk">Total Votes</div><div class="dp-mv tc" id="dp-votes">—</div></div>
+    <div class="dp-mc"><div class="dp-mk">Status</div><div class="dp-mv" id="dp-status">—</div></div>
+    <div class="dp-mc"><div class="dp-mk">Voting Closes</div><div class="dp-mv mono" id="dp-vdeadline" style="font-size:.7rem;">—</div></div>
+  </div>
+
+  <div class="dp-sec" id="dp-bid-cnt"><i class="fas fa-trophy"></i> BIDDERS &amp; VOTES</div>
+  <div id="dp-bidders"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="/static/web3.js"></script>
+<script>
+/* ══════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════ */
+const VENDOR_ABI = [
+  "function getProfile(address) view returns (string,string,string,string,string,uint8,uint256,uint256)",
+  "function tenderCount() view returns (uint256)",
+  "function tenders(uint256) view returns (uint256,string,string,uint256,uint256,address,uint256,address,bool,uint256,address)",
+  "function getBidders(uint256) view returns (address[])",
+  "function bids(uint256,address) view returns (uint256)",
+  "function placeBid(uint256,uint256)",
+  "function castVote(uint256,address)",
+  "function finalizeTender(uint256)",
+  "function getVoteCounts(uint256) view returns (address[],uint256[])",
+  "function getMyVote(uint256,address) view returns (address)",
+  "function voteCount(uint256,address) view returns (uint256)",
+];
+
+let provider2, signer2, contract2;
+let allTenders = [];
+let myAddress  = null;
+let cdTick     = null;
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function fmtCd(ts) {
+  const diff = ts - Math.floor(Date.now()/1000);
+  if (diff <= 0) return { text:'CLOSED', open:false };
+  const h=Math.floor(diff/3600), m=Math.floor((diff%3600)/60), s=diff%60;
+  return { text: h>0?`${h}h ${m}m`:`${m}m ${s}s`, open:true };
+}
+
+function startCd() {
+  if (cdTick) clearInterval(cdTick);
+  cdTick = setInterval(() => {
+    document.querySelectorAll('[data-deadline]').forEach(el => {
+      const cd = fmtCd(Number(el.dataset.deadline));
+      el.textContent = cd.text;
+      el.className = el.className.replace(/cd-open|cd-closed/g,'').trim() + (cd.open?' cd-open':' cd-closed');
+    });
+  }, 1000);
+}
+
+/**
+ * Returns the phase of a tender:
+ *   'bidding'  — bidding window is open
+ *   'voting'   — bidding closed, voting window open
+ *   'ended'    — fully finalized
+ *   'closed'   — voting closed but not finalized
+ */
+function getTenderPhase(t) {
+  const now = Math.floor(Date.now()/1000);
+  if (t.ended) return 'ended';
+  if (now < t.biddingDeadline) return 'bidding';
+  if (now < t.votingDeadline)  return 'voting';
+  return 'closed';
+}
+
+function phaseBadge(phase) {
+  const map = {
+    bidding: ['b-active',    '🔨 Bidding Open'],
+    voting:  ['b-leading',   '🗳️ Voting Open'],
+    closed:  ['b-pending',   '⏳ Awaiting Finalization'],
+    ended:   ['b-ended',     '✅ Finalized'],
+  };
+  const [cls, label] = map[phase] || ['b-outbid', phase];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+/* ══════════════════════════════════════════════
+   WALLET INIT
+══════════════════════════════════════════════ */
+async function initDashboard() {
+  if (!window.ethereum) { alert('MetaMask not detected.'); return; }
+  await window.ethereum.request({ method: 'eth_requestAccounts' });
+  provider2 = new ethers.BrowserProvider(window.ethereum);
+  signer2   = await provider2.getSigner();
+  myAddress  = await signer2.getAddress();
+
+  contract2 = new ethers.Contract(
+    "0x93d2E2885C3fBC1bb2c3a7c9Fc0A89dFc416673a",
+    VENDOR_ABI, signer2
+  );
+
+  document.getElementById('wdot').classList.add('on');
+  document.getElementById('wallet-lbl').textContent = myAddress.slice(0,6)+'…'+myAddress.slice(-4);
+
+  await loadTenders();
+  renderMyBids();
+  renderVoteSection();
+}
+
+/* ══════════════════════════════════════════════
+   SECTION NAV
+══════════════════════════════════════════════ */
+function showSection(id, el) {
+  document.querySelectorAll('.adm-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+
+  if (!contract2) return;
+  if (id === 'tenders') loadTenders();
+  if (id === 'mybids')  renderMyBids();
+  if (id === 'vote')    renderVoteSection();
+}
+
+/* ══════════════════════════════════════════════
+   LOAD TENDERS
+══════════════════════════════════════════════ */
+async function loadTenders() {
+  if (!contract2) { await initDashboard(); return; }
+  const listEl   = document.getElementById('tender-list');
+  const selectEl = document.getElementById('bid-tid');
+  listEl.innerHTML = `<div class="empty"><div class="empty-i"><i class="fas fa-spinner spin"></i></div><div class="empty-t">Loading from chain…</div></div>`;
+
+  try {
+    const count = Number(await contract2.tenderCount());
+    allTenders = [];
+
+    for (let i = 1; i <= count; i++) {
+      const t = await contract2.tenders(i);
+      const bidders = await contract2.getBidders(i);
+
+      let vcRes = { bidderList: [], voteCounts: [] };
+      try {
+        const [bl, vc] = await contract2.getVoteCounts(i);
+        vcRes = { bidderList: [...bl], voteCounts: vc.map(Number) };
+      } catch(_) {}
+
+      const bidsArr = await Promise.all(bidders.map(async b => {
+        const amt = await contract2.bids(i, b);
+        let name = '—', org = '—';
+        try { const p = await contract2.getProfile(b); name = p[0]; org = p[1]; } catch(_) {}
+        const vIdx = vcRes.bidderList.findIndex(a => a.toLowerCase() === b.toLowerCase());
+        const votes = vIdx >= 0 ? vcRes.voteCounts[vIdx] : 0;
+        return { bidder: b, amount: amt, name, org, votes };
+      }));
+
+      let myVote = null;
+      if (myAddress) {
+        try { myVote = await contract2.getMyVote(i, myAddress); } catch(_) {}
+        if (myVote === '0x0000000000000000000000000000000000000000') myVote = null;
+      }
+
+      allTenders.push({
+        id: Number(t[0]), title: t[1], desc: t[2],
+        biddingDeadline: Number(t[3]),
+        votingDeadline:  Number(t[4]),
+        creator: t[5],
+        hiBid: t[6], hiBidder: t[7],
+        ended: t[8],
+        totalVotes: Number(t[9]),
+        winner: t[10],
+        bids: bidsArr,
+        myVote,
+      });
+    }
+
+    // ── Update stats ──────────────────────────────
+    const now = Math.floor(Date.now()/1000);
+    const biddingOpen = allTenders.filter(t => getTenderPhase(t) === 'bidding');
+    const votingOpen  = allTenders.filter(t => getTenderPhase(t) === 'voting');
+    const myLeading   = allTenders.filter(t => myAddress && t.hiBidder.toLowerCase() === myAddress.toLowerCase() && !t.ended);
+
+    document.getElementById('stat-tenders').textContent = allTenders.length;
+    document.getElementById('stat-active').textContent  = biddingOpen.length;
+    document.getElementById('stat-voting').textContent  = votingOpen.length;
+    document.getElementById('stat-leading').textContent = myLeading.length;
+
+    const canVote = votingOpen.filter(t => !t.myVote).length;
+    document.getElementById('badge-vote').textContent   = canVote;
+    document.getElementById('badge-mybids').textContent = allTenders.filter(
+      t => myAddress && t.bids.some(b => b.bidder.toLowerCase() === myAddress.toLowerCase())
+    ).length;
+
+    // ── Populate bid select ───────────────────────
+    selectEl.innerHTML = '<option disabled selected value="">Select a tender…</option>';
+    biddingOpen.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = `#${t.id} — ${t.title}`;
+      selectEl.appendChild(opt);
+    });
+    if (!biddingOpen.length) {
+      const opt = document.createElement('option');
+      opt.disabled = true; opt.textContent = 'No tenders currently accepting bids';
+      selectEl.appendChild(opt);
+    }
+
+    // ── Phase timeline panel ──────────────────────
+    if (allTenders.length) {
+      document.getElementById('phase-panel').style.display = '';
+      document.getElementById('phase-list').innerHTML = allTenders.map(t => {
+        const phase = getTenderPhase(t);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;background:var(--bg-input);border-radius:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="mono tc" style="font-size:.72rem;">#${t.id}</span>
+            <span style="font-weight:600;font-size:.85rem;">${esc(t.title)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            ${phaseBadge(phase)}
+            ${phase==='voting' ? `<span class="cd-open mono" style="font-size:.72rem;" data-deadline="${t.votingDeadline}">${fmtCd(t.votingDeadline).text}</span>` : ''}
+            ${phase==='bidding' ? `<span class="cd-open mono" style="font-size:.72rem;" data-deadline="${t.biddingDeadline}">${fmtCd(t.biddingDeadline).text}</span>` : ''}
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:.74rem;" onclick="openDetail(${t.id})"><i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Tender list ───────────────────────────────
+    if (!allTenders.length) {
+      listEl.innerHTML = `<div class="empty"><div class="empty-i">📋</div><div class="empty-t">No tenders deployed on-chain.</div></div>`;
+      return;
+    }
+
+    listEl.innerHTML = allTenders.map(t => {
+      const phase  = getTenderPhase(t);
+      const myBid  = myAddress ? t.bids.find(b => b.bidder.toLowerCase() === myAddress.toLowerCase()) : null;
+      const isLeading = myAddress && t.hiBidder && t.hiBidder.toLowerCase() === myAddress.toLowerCase();
+      const topVoteBid = [...t.bids].sort((a,b) => b.votes-a.votes)[0];
+
+      return `
+        <div class="bid-block" onclick="openDetail(${t.id})" style="cursor:pointer;">
+          <div class="bb-head">
+            <div>
+              <div class="bb-no">TENDER #${t.id}</div>
+              <div class="bb-name">${esc(t.title)}</div>
+              <div class="bb-desc">${esc(t.desc)}</div>
+            </div>
+            <div class="bb-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+              ${phaseBadge(phase)}
+              ${isLeading ? '<span class="badge b-leading">Leading</span>' : ''}
+              ${t.myVote ? '<span class="badge b-approved" style="font-size:.6rem;">✓ Voted</span>' : ''}
+              <div class="bb-cnt">${t.bids.length} bid${t.bids.length!==1?'s':''} · ${t.totalVotes} vote${t.totalVotes!==1?'s':''}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;padding:1rem 1.4rem;">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Highest Bid</div>
+              <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--green);">${t.hiBid > 0 ? Number(t.hiBid).toLocaleString()+' Wei' : '—'}</div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Your Bid</div>
+              <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:${myBid?'var(--amber)':'var(--text-3)'};">${myBid ? Number(myBid.amount).toLocaleString()+' Wei' : '—'}</div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Vote Leader</div>
+              <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--cyan);">${topVoteBid && topVoteBid.votes > 0 ? topVoteBid.bidder.slice(0,8)+'… ('+topVoteBid.votes+')' : '—'}</div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">${phase === 'voting' ? 'Vote Ends' : 'Bid Ends'}</div>
+              <div class="${phase==='ended'?'cd-closed':'cd-open'} mono" style="font-size:.82rem;"
+                data-deadline="${phase==='voting'?t.votingDeadline:t.biddingDeadline}">
+                ${phase==='ended' ? 'CLOSED' : fmtCd(phase==='voting'?t.votingDeadline:t.biddingDeadline).text}
+              </div>
+            </div>
+          </div>
+          ${phase === 'voting' && !t.myVote ? `<div style="padding:.65rem 1.4rem;border-top:1px solid var(--border);background:linear-gradient(90deg,rgba(0,214,143,.05),transparent);display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-vote-yea" style="color:var(--green);"></i>
+            <span style="font-size:.8rem;color:var(--green);font-weight:600;">Voting is open — click to cast your vote</span>
+          </div>` : ''}
+          ${phase === 'ended' && t.winner && t.winner !== '0x0000000000000000000000000000000000000000' ? `<div style="padding:.65rem 1.4rem;border-top:1px solid var(--border);background:linear-gradient(90deg,rgba(255,184,0,.06),transparent);display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-crown" style="color:var(--amber);"></i>
+            <span style="font-size:.8rem;color:var(--amber);font-weight:600;">Winner: ${t.winner.slice(0,10)}…${t.winner.slice(-6)}</span>
+          </div>` : ''}
+        </div>`;
+    }).join('');
+
+    startCd();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--red);"><div class="empty-i">⚠️</div><div class="empty-t">${esc(e.reason||e.message)}</div></div>`;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   MY BIDS
+══════════════════════════════════════════════ */
+function renderMyBids() {
+  const wrap = document.getElementById('mybid-list');
+  if (!allTenders.length || !myAddress) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-i">🔗</div><div class="empty-t">Connect wallet to see your bids</div></div>`;
+    return;
+  }
+
+  const myBidTenders = allTenders.filter(t =>
+    t.bids.some(b => b.bidder.toLowerCase() === myAddress.toLowerCase())
+  );
+
+  if (!myBidTenders.length) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-i">🎯</div><div class="empty-t">You haven't placed any bids yet.</div></div>`;
+    return;
+  }
+
+  wrap.innerHTML = myBidTenders.map(t => {
+    const myBid     = t.bids.find(b => b.bidder.toLowerCase() === myAddress.toLowerCase());
+    const phase     = getTenderPhase(t);
+    const isLeading = t.hiBidder && t.hiBidder.toLowerCase() === myAddress.toLowerCase();
+    const myVotesReceived = myBid ? myBid.votes : 0;
+    const isWinner  = t.ended && t.winner && t.winner.toLowerCase() === myAddress.toLowerCase();
+    const sorted    = [...t.bids].sort((a,b) => b.votes - a.votes || Number(b.amount)-Number(a.amount));
+    const rank      = sorted.findIndex(b => b.bidder.toLowerCase() === myAddress.toLowerCase()) + 1;
+
+    return `
+      <div class="user-card" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:.75rem;" onclick="openDetail(${t.id})">
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <div class="u-av" style="background:${isWinner?'linear-gradient(135deg,#FFD700,#FF8C00)':isLeading?'linear-gradient(135deg,var(--green),var(--cyan))':'linear-gradient(135deg,var(--violet),var(--pink))'};">
+            ${isWinner?'🏆':isLeading?'🥇':'📝'}
+          </div>
+          <div class="u-info">
+            <div class="u-name">#${t.id} — ${esc(t.title)}</div>
+            <div class="u-addr" style="color:var(--amber);">Your bid: ${Number(myBid.amount).toLocaleString()} Wei</div>
+            <div class="u-meta">Highest offer: ${t.hiBid > 0 ? Number(t.hiBid).toLocaleString()+' Wei' : 'none'}</div>
+          </div>
+          <div class="u-actions" style="flex-direction:column;align-items:flex-end;gap:4px;">
+            ${phaseBadge(phase)}
+            ${isWinner ? '<span class="badge b-leading" style="background:rgba(255,215,0,.15);color:#FFD700;border-color:rgba(255,215,0,.3);">🏆 Winner</span>' : ''}
+          </div>
+        </div>
+        <!-- Vote stats bar -->
+        <div style="background:var(--bg-input);border-radius:10px;padding:.75rem 1rem;display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;">
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Votes Received</div>
+            <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:var(--cyan);">${myVotesReceived}</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Rank</div>
+            <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:var(--amber);">${rank > 0 ? '#'+rank : '—'} <span style="font-size:.7rem;color:var(--text-3);">/ ${t.bids.length}</span></div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Total Votes</div>
+            <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:var(--violet);">${t.totalVotes}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════
+   VOTE SECTION
+══════════════════════════════════════════════ */
+function renderVoteSection() {
+  const wrap = document.getElementById('vote-list');
+  if (!allTenders.length || !myAddress) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-i">🗳️</div><div class="empty-t">Connect wallet to participate in voting</div></div>`;
+    return;
+  }
+
+  const votingTenders = allTenders.filter(t => getTenderPhase(t) === 'voting');
+  const closedPending = allTenders.filter(t => getTenderPhase(t) === 'closed');
+  const finished      = allTenders.filter(t => t.ended);
+
+  let html = '';
+
+  // ── Active voting rounds ──────────────────────────
+  if (votingTenders.length) {
+    html += `<div class="row-section-hd tg"><i class="fas fa-vote-yea"></i> ACTIVE VOTING ROUNDS (${votingTenders.length})</div>`;
+    html += votingTenders.map(t => buildVoteCard(t, true)).join('');
+  }
+
+  // ── Closed, awaiting finalization ─────────────────
+  if (closedPending.length) {
+    html += `<div class="row-section-hd ta" style="margin-top:1.5rem;"><i class="fas fa-hourglass-end"></i> AWAITING FINALIZATION (${closedPending.length})</div>`;
+    html += closedPending.map(t => buildVoteCard(t, false)).join('');
+  }
+
+  // ── Completed ────────────────────────────────────
+  if (finished.length) {
+    html += `<div class="row-section-hd t2" style="margin-top:1.5rem;"><i class="fas fa-check-double"></i> FINALIZED RESULTS (${finished.length})</div>`;
+    html += finished.map(t => buildVoteCard(t, false)).join('');
+  }
+
+  if (!html) {
+    html = `<div class="empty"><div class="empty-i">⏳</div><div class="empty-t">No tenders are currently in the voting phase.</div></div>`;
+  }
+
+  wrap.innerHTML = html;
+  startCd();
+}
+
+function buildVoteCard(t, isActive) {
+  const phase     = getTenderPhase(t);
+  const sorted    = [...t.bids].sort((a,b) => b.votes-a.votes || Number(b.amount)-Number(a.amount));
+  const totalVotes = t.totalVotes;
+  const myVoted   = t.myVote;
+  const iAmBidder = myAddress && t.bids.some(b => b.bidder.toLowerCase() === myAddress.toLowerCase());
+
+  let statusNote = '';
+  if (myVoted) {
+    const candidate = sorted.find(b => b.bidder.toLowerCase() === myVoted.toLowerCase());
+    statusNote = `<div class="adm-alert al-s show" style="margin-bottom:0;margin-top:.75rem;"><i class="fas fa-check-circle"></i> You voted for: <b>${candidate ? esc(candidate.name||candidate.bidder.slice(0,10)+'…') : myVoted.slice(0,10)+'…'}</b></div>`;
+  } else if (isActive && iAmBidder) {
+    statusNote = `<div class="adm-alert al-i show" style="margin-bottom:0;margin-top:.75rem;"><i class="fas fa-info-circle"></i> You have a bid on this tender — you cannot vote for yourself, but can vote for others.</div>`;
+  } else if (isActive && !myVoted) {
+    statusNote = `<div class="adm-alert al-i show" style="margin-bottom:0;margin-top:.75rem;"><i class="fas fa-vote-yea"></i> You haven't voted yet. Select a candidate below.</div>`;
+  }
+
+  const bidRows = sorted.map((b, i) => {
+    const rCls    = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const isMe    = myAddress && b.bidder.toLowerCase() === myAddress.toLowerCase();
+    const pct     = totalVotes > 0 ? Math.round((b.votes / totalVotes)*100) : 0;
+    const iMyVote = myVoted && b.bidder.toLowerCase() === myVoted.toLowerCase();
+    const canVote = isActive && !myVoted && !isMe;
+    const isWinner = t.ended && t.winner && b.bidder.toLowerCase() === t.winner.toLowerCase();
+
+    return `
+      <div class="vote-row" style="padding:.9rem 1.4rem;border-bottom:1px solid var(--border);transition:background .15s;${canVote?'cursor:pointer;':''}${canVote?'':''}"
+        ${canVote ? `onclick="castVoteFor(${t.id},'${b.bidder}',this)" onmouseenter="this.style.background='rgba(0,214,143,.04)'" onmouseleave="this.style.background=''"` : ''}>
+        <div style="display:grid;grid-template-columns:38px 1fr auto auto;gap:10px;align-items:center;">
+          <div class="rank ${rCls}">${i+1}</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div class="b-addr">${b.bidder.slice(0,10)}…${b.bidder.slice(-6)}</div>
+              ${isMe      ? '<span class="badge b-pending" style="font-size:.55rem;">You</span>' : ''}
+              ${iMyVote   ? '<span class="badge b-approved" style="font-size:.55rem;">✓ Your Vote</span>' : ''}
+              ${isWinner  ? '<span class="badge" style="background:rgba(255,215,0,.15);color:#FFD700;border:1px solid rgba(255,215,0,.3);font-size:.6rem;">🏆 Winner</span>' : ''}
+            </div>
+            <div class="b-meta">${esc(b.name)} · ${esc(b.org)}</div>
+            <!-- Vote bar -->
+            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+              <div style="flex:1;height:4px;background:var(--bg-input);border-radius:2px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${i===0?'var(--cyan)':'var(--violet)'};border-radius:2px;transition:width .5s;"></div>
+              </div>
+              <span style="font-family:var(--font-mono);font-size:.64rem;color:var(--text-3);min-width:32px;">${pct}%</span>
+            </div>
+          </div>
+          <div class="b-eth">${Number(b.amount).toLocaleString()} Wei</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+            <div style="font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--cyan);">${b.votes} vote${b.votes!==1?'s':''}</div>
+            ${canVote ? `<button class="btn-ok" style="font-size:.72rem;padding:5px 11px;" onclick="event.stopPropagation();castVoteFor(${t.id},'${b.bidder}',this)">
+              <i class="fas fa-check"></i> Vote
+            </button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const noBids = !sorted.length
+    ? `<div style="padding:1.25rem 1.4rem;color:var(--text-3);font-family:var(--font-mono);font-size:.78rem;">No bids were placed on this tender.</div>`
+    : '';
+
+  const finBtn = (phase === 'closed' || (phase === 'voting' && allTenders.length))
+    ? (phase === 'closed' ? `<div style="padding:.85rem 1.4rem;border-top:1px solid var(--border);"><button class="btn btn-ghost" style="font-size:.8rem;" onclick="finalizeTenderChain(${t.id})"><i class="fas fa-flag-checkered"></i> Finalize Tender</button></div>` : '')
+    : '';
+
+  const voteDeadlineRow = isActive
+    ? `<div style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);">Voting closes in: <span class="cd-open" data-deadline="${t.votingDeadline}">${fmtCd(t.votingDeadline).text}</span></div>`
+    : '';
+
+  return `
+    <div class="bid-block" style="margin-bottom:1rem;">
+      <div class="bb-head">
+        <div>
+          <div class="bb-no">TENDER #${t.id}</div>
+          <div class="bb-name">${esc(t.title)}</div>
+          <div class="bb-desc">${esc(t.desc)}</div>
+          ${voteDeadlineRow}
+        </div>
+        <div class="bb-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+          ${phaseBadge(phase)}
+          <div class="bb-cnt">${sorted.length} bidder${sorted.length!==1?'s':''} · <span style="color:var(--cyan);font-weight:700;">${totalVotes}</span> vote${totalVotes!==1?'s':''}</div>
+          <div style="padding:0 .5rem .1rem;"><button class="btn btn-ghost" style="padding:4px 10px;font-size:.74rem;" onclick="openDetail(${t.id})"><i class="fas fa-binoculars"></i> Full Detail</button></div>
+        </div>
+      </div>
+      ${statusNote}
+      <div id="vote-alert-${t.id}" class="adm-alert" style="margin:.5rem 1.4rem 0;"></div>
+      ${bidRows}
+      ${noBids}
+      ${finBtn}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   CAST VOTE ON-CHAIN
+══════════════════════════════════════════════ */
+async function castVoteFor(tenderId, candidateAddr, btnEl) {
+  const al = document.getElementById(`vote-alert-${tenderId}`);
+  const sh = (type, msg) => { al.className=`adm-alert al-${type} show`; al.innerHTML=msg; };
+
+  if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner spin"></i>'; }
+
+  try {
+    if (!contract2) await initDashboard();
+    sh('i', '<i class="fas fa-spinner spin"></i> Confirm vote in MetaMask…');
+
+    const tx = await contract2.castVote(tenderId, candidateAddr);
+    sh('i', `<i class="fas fa-spinner spin"></i> Tx: <code>${tx.hash.slice(0,14)}…</code>`);
+    await tx.wait();
+    sh('s', `✅ Vote cast for <b>${candidateAddr.slice(0,10)}…</b>`);
+
+    await loadTenders();
+    renderVoteSection();
+    renderMyBids();
+  } catch(e) {
+    sh('e', '❌ '+(e.reason||e.message||'Vote failed'));
+    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> Vote'; }
+  }
+}
+
+/* ══════════════════════════════════════════════
+   FINALIZE TENDER
+══════════════════════════════════════════════ */
+async function finalizeTenderChain(tenderId) {
+  if (!confirm(`Finalize tender #${tenderId}? This is irreversible.`)) return;
+  try {
+    if (!contract2) await initDashboard();
+    const tx = await contract2.finalizeTender(tenderId);
+    await tx.wait();
+    alert('✅ Tender finalized.');
+    await loadTenders();
+    renderVoteSection();
+    renderMyBids();
+  } catch(e) {
+    alert('❌ '+(e.reason||e.message));
+  }
+}
+
+/* ══════════════════════════════════════════════
+   SUBMIT BID
+══════════════════════════════════════════════ */
+async function submitBidOnChain() {
+  const al = document.getElementById('bid-alert');
+  const sh = (t,m) => { al.className=`adm-alert al-${t} show`; al.innerHTML=m; };
+
+  try {
+    if (!contract2) await initDashboard();
+    const tid    = Number(document.getElementById('bid-tid').value);
+    const amount = BigInt(document.getElementById('amount').value || 0);
+    if (!tid || amount <= 0n) { sh('e','⚠️ Select a tender and enter a valid amount.'); return; }
+
+    sh('i','<i class="fas fa-spinner spin"></i> Confirm in MetaMask…');
+    const tx = await contract2.placeBid(tid, amount);
+    sh('i',`<i class="fas fa-spinner spin"></i> Tx: <code>${tx.hash.slice(0,14)}…</code>`);
+    await tx.wait();
+    sh('s',`✅ Bid placed! <code>${tx.hash.slice(0,14)}…</code>`);
+
+    await loadTenders();
+    renderMyBids();
+  } catch(e) { sh('e','❌ '+(e.reason||e.message||'Failed')); }
+}
+
+/* ══════════════════════════════════════════════
+   DETAIL PANEL
+══════════════════════════════════════════════ */
+function openDetail(id) {
+  const t = allTenders.find(x => x.id === id); if (!t) return;
+  const phase  = getTenderPhase(t);
+  const sorted = [...t.bids].sort((a,b) => b.votes-a.votes || Number(b.amount)-Number(a.amount));
+
+  document.getElementById('dp-no').textContent      = `TENDER #${id}`;
+  document.getElementById('dp-title').textContent   = t.title;
+  document.getElementById('dp-desc').textContent    = t.desc;
+  document.getElementById('dp-high').textContent    = t.hiBid > 0 ? Number(t.hiBid).toLocaleString()+' Wei' : '—';
+  document.getElementById('dp-votes').textContent   = t.totalVotes;
+  document.getElementById('dp-status').innerHTML    = phaseBadge(phase);
+  document.getElementById('dp-vdeadline').textContent = new Date(t.votingDeadline*1000).toLocaleString();
+
+  // Phase row
+  document.getElementById('dp-phase-row').innerHTML = `
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+      <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--text-3);">BIDDING</div>
+      <div class="${phase==='bidding'?'cd-open':'cd-closed'} mono" style="font-size:.72rem;">${phase==='bidding'?fmtCd(t.biddingDeadline).text:'CLOSED'}</div>
+      <div style="color:var(--text-3);">→</div>
+      <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--text-3);">VOTING</div>
+      <div class="${phase==='voting' ? 'cd-open' : phase==='ended' ? 'cd-closed' : 'mono t2'} mono" style="font-size:.72rem;">
+        ${phase==='voting' ? fmtCd(t.votingDeadline).text : phase==='ended' ? 'CLOSED' : 'Not started'}
+      </div>
+    </div>`;
+
+  document.getElementById('dp-bid-cnt').innerHTML = `<i class="fas fa-trophy"></i> BIDDERS &amp; VOTES — ${sorted.length}`;
+
+  const dpB = document.getElementById('dp-bidders');
+  if (!sorted.length) {
+    dpB.innerHTML = `<div style="color:var(--text-3);font-family:var(--font-mono);font-size:.78rem;padding:.75rem 0;">No bids placed yet.</div>`;
+  } else {
+    const total = t.totalVotes;
+    dpB.innerHTML = sorted.map((b,i) => {
+      const rCls   = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+      const isLeader = i === 0 && b.votes > 0;
+      const pct    = total > 0 ? Math.round((b.votes/total)*100) : 0;
+      const isWinner = t.ended && t.winner && b.bidder.toLowerCase() === t.winner.toLowerCase();
+      return `<div class="bid-row" style="display:block;padding:.9rem 1.4rem;">
+        <div style="display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;margin-bottom:6px;">
+          <div class="rank ${rCls}">${i+1}</div>
+          <div>
+            <div class="b-addr">${b.bidder.slice(0,10)}…${b.bidder.slice(-6)}
+              ${isWinner?'<span class="badge" style="background:rgba(255,215,0,.15);color:#FFD700;border:1px solid rgba(255,215,0,.3);font-size:.55rem;">🏆 Winner</span>':''}
+              ${isLeader?'<span class="badge b-leading" style="font-size:.55rem;">Vote Leader</span>':''}
+            </div>
+            <div class="b-meta">${esc(b.name)} · ${esc(b.org)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="b-eth">${Number(b.amount).toLocaleString()} Wei</div>
+            <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--cyan);font-weight:700;">${b.votes} vote${b.votes!==1?'s':''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-left:48px;">
+          <div style="flex:1;height:6px;background:var(--bg-input);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${i===0?'linear-gradient(90deg,var(--cyan),var(--violet))':'var(--violet)'};border-radius:3px;transition:width .5s;"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:.64rem;color:var(--text-3);min-width:34px;">${pct}%</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('side-panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('side-panel').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  if (window.ethereum) {
+    initDashboard();
+    window.ethereum.on('accountsChanged', () => window.location.reload());
+    window.ethereum.on('chainChanged',    () => window.location.reload());
+  }
+});
+</script>
+{% endblock %}

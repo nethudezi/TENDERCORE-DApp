@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-viewport">
+  <div class="auth-card">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⛓</div>
+      <div class="auth-logo-wordmark">TENDER<em>CORE</em></div>
+    </div>
+    <div class="auth-subtitle">Enterprise Blockchain Gateway</div>
+
+    <!-- Error box -->
+    <div class="auth-error" id="login-err">
+      <i class="fas fa-circle-exclamation"></i>
+      <span id="login-err-msg">Error</span>
+    </div>
+
+    <!-- Connect Wallet -->
+    <button class="btn-wallet" onclick="walletLogin()">
+      <i class="fas fa-wallet"></i>
+      Connect Wallet &amp; Login
+    </button>
+
+    <hr class="auth-divider">
+
+    <!-- Day/Night Toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="dn-toggle">
+        <span class="dn-label" id="dn-lbl">NIGHT</span>
+        <button class="dn-track" onclick="toggleTheme()" aria-label="Toggle day/night theme">
+          <div class="dn-stars"><span></span><span></span><span></span></div>
+          <div class="dn-clouds"></div>
+          <div class="dn-thumb"><span class="dn-icon" id="dn-icon">🌙</span></div>
+        </button>
+      </div>
+      <div class="auth-footer">
+        <a href="/register">Request Access</a>
+        <span class="sep">|</span>
+        <a href="/admin" style="color:var(--text-3)">Governance</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/static/web3.js"></script>
+<script>
+async function walletLogin() {
+  const errDiv = document.getElementById('login-err');
+  const errMsg = document.getElementById('login-err-msg');
+  errDiv.classList.remove('show');
+
+  const btn = document.querySelector('.btn-wallet');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner spin"></i> Connecting…';
+  btn.disabled = true;
+
+  try {
+    await connectWallet();
+    const me = await signer.getAddress();
+
+    const prof = await contract.getProfile(me);
+    const status = Number(prof[5]); // 0=None 1=Pending 2=Approved 3=Rejected
+
+    if (status !== 2) {
+      const msgs = {
+        0: 'No registration found. Please request access first.',
+        1: 'Your account is pending admin verification.',
+        3: 'Access denied. Contact the administrator.'
+      };
+      errMsg.textContent = msgs[status] || 'Not approved.';
+      errDiv.classList.add('show');
+      return;
+    }
+
+    const res = await fetch('/login-wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: me })
+    });
+
+    if (res.ok) {
+      window.location.href = '/';
+    } else {
+      throw new Error('Session creation failed');
+    }
+
+  } catch (err) {
+    errMsg.textContent = err.message || 'Login failed';
+    errDiv.classList.add('show');
+  } finally {
+    btn.innerHTML = orig;
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}
